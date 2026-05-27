@@ -11,22 +11,27 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
 
-    // Placeholder auth (no backend wiring in this UI task)
-    await new Promise((r) => setTimeout(r, 600))
-
-    window.localStorage.setItem('demoAuth', 'true')
-    navigate('/planner')
+    // TODO: wire to backend auth
+    // For now, just redirect after successful submission.
+    navigate('/dashboard')
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 md:p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white/70 dark:bg-white/5 border border-white/40 dark:border-white/10 shadow-soft p-6 md:p-8 backdrop-blur">
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-6 bg-slate-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
+      <div className="relative w-full max-w-md rounded-3xl bg-white/70 dark:bg-white/5 border border-white/40 dark:border-white/10 shadow-soft p-6 md:p-8 backdrop-blur overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute -top-24 -left-24 h-64 w-64 rounded-full bg-brand-500/20 blur-2xl" />
+          <div className="absolute -bottom-28 -right-28 h-72 w-72 rounded-full bg-cyan-400/15 blur-2xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,143,255,0.14),transparent_55%)]" />
+        </div>
+
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-brand-500 via-sky-500 to-brand-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-brand-500 via-sky-500 to-brand-400 bg-clip-text text-transparent">
             Welcome back
           </h1>
           <p className="mt-2 text-slate-600 dark:text-slate-300">Login to generate your next trip.</p>
         </div>
+
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>

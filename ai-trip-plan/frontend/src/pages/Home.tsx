@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import ThreeBackdrop from '../components/ThreeBackdrop'
 import ThemeToggle from '../components/ThemeToggle'
+
 
 type Budget = 'economy' | 'mid' | 'luxury'
 type TravelMode = 'flight' | 'train' | 'car'
@@ -267,16 +269,44 @@ export default function Home() {
                   {label}
                 </button>
               ))}
-            </nav>
+              </nav>
 
-            <div className="ml-2">
+              <div className="flex items-center gap-2 ml-2">
+                <Link
+                  to="/login"
+                  className="px-3 py-2 rounded-xl border border-white/45 bg-white/40 dark:bg-white/5 text-sm font-extrabold text-slate-900 dark:text-white backdrop-blur-xl shadow-soft hover:bg-white/60 dark:hover:bg-white/10 transition"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-3 py-2 rounded-xl border border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-sky-500/15 text-sm font-extrabold text-brand-600 dark:text-brand-300 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,143,255,0.10)] hover:brightness-110 transition"
+                >
+                  Signup
+                </Link>
+
+                <div className="ml-1">
+                  <ThemeToggle />
+                </div>
+              </div>
+            </div>
+
+            <div className="sm:hidden flex items-center gap-2">
+              <Link
+                to="/login"
+                className="px-3 py-2 rounded-xl border border-white/45 bg-white/40 dark:bg-white/5 text-sm font-extrabold text-slate-900 dark:text-white backdrop-blur-xl shadow-soft hover:bg-white/60 dark:hover:bg-white/10 transition"
+              >
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                className="px-3 py-2 rounded-xl border border-brand-500/40 bg-gradient-to-r from-brand-500/20 to-sky-500/15 text-sm font-extrabold text-brand-600 dark:text-brand-300 backdrop-blur-xl shadow-[0_18px_60px_rgba(0,143,255,0.10)] hover:brightness-110 transition"
+              >
+                Signup
+              </Link>
               <ThemeToggle />
             </div>
-          </div>
 
-          <div className="sm:hidden">
-            <ThemeToggle />
-          </div>
         </div>
       </div>
       </header>
