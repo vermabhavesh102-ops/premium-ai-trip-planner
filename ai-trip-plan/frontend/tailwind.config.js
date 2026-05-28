@@ -19,10 +19,16 @@ export default {
         }
       },
       boxShadow: {
-        soft: '0 10px 30px rgba(0, 0, 0, 0.08)'
+        soft: '0 10px 30px rgba(0, 0, 0, 0.08)',
+        luxe: '0 24px 80px rgba(0, 0, 0, 0.22)',
+        glow: '0 0 0 1px rgba(255,255,255,0.18), 0 20px 60px rgba(0,143,255,0.2)'
+      },
+      borderRadius: {
+        '4xl': '2rem'
       }
     }
   },
   plugins: []
 }
+
 

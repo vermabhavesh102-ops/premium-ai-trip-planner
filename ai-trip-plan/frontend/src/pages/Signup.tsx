@@ -1,91 +1,39 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { apiFetch, storeToken } from '../lib/apiClient'
+import { useAuth } from '../context/AuthContext'
+
+type TokenResponse = { access_token: string }
 
 export default function Signup() {
   const navigate = useNavigate()
-  const [name, setName] = useState('')
+  const { login } = useAuth()
+  const [full_name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
-    // TODO: wire to backend auth
-    // For now, just redirect after successful submission.
-    navigate('/dashboard')
+    setError('')
+    try {
+      await apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ full_name, email, password }) })
+      const form = new URLSearchParams()
+      form.set('username', email)
+      form.set('password', password)
+      const token = await apiFetch<TokenResponse>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form })
+      storeToken(token.access_token)
+      login(token.access_token)
+      navigate('/planner')
+    } catch (e: any) {
+      setError(e?.message ?? 'Signup failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 md:p-6 bg-slate-50 dark:bg-gradient-to-br dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
-      <div className="relative w-full max-w-md rounded-3xl bg-white/70 dark:bg-white/5 border border-white/40 dark:border-white/10 shadow-soft p-6 md:p-8 backdrop-blur overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-24 -left-24 h-64 w-64 rounded-full bg-brand-500/20 blur-2xl" />
-          <div className="absolute -bottom-28 -right-28 h-72 w-72 rounded-full bg-cyan-400/15 blur-2xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,143,255,0.14),transparent_55%)]" />
-        </div>
-
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-brand-500 via-sky-500 to-brand-400 bg-clip-text text-transparent">
-            Create account
-          </h1>
-          <p className="mt-2 text-slate-600 dark:text-slate-300">Start planning with AI trip cards.</p>
-        </div>
-
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">Name</label>
-            <input
-              className="mt-2 w-full rounded-2xl bg-white/70 dark:bg-white/5 border border-white/40 dark:border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500/40"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              placeholder="Your name"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">Email</label>
-            <input
-              className="mt-2 w-full rounded-2xl bg-white/70 dark:bg-white/5 border border-white/40 dark:border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500/40"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-semibold text-slate-800 dark:text-slate-100">Password</label>
-            <input
-              className="mt-2 w-full rounded-2xl bg-white/70 dark:bg-white/5 border border-white/40 dark:border-white/10 px-4 py-3 outline-none focus:ring-2 focus:ring-brand-500/40"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            disabled={loading}
-            className="w-full rounded-2xl bg-gradient-to-r from-brand-500 to-sky-500 px-4 py-3 font-bold text-white shadow-soft hover:brightness-110 disabled:opacity-60"
-          >
-            {loading ? 'Creating account...' : 'Sign up'}
-          </button>
-
-          <p className="text-center text-sm text-slate-600 dark:text-slate-300">
-            Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-brand-600 dark:text-brand-400 hover:underline">
-              Login
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
-  )
+  return <div className="min-h-screen premium-bg flex items-center justify-center p-4"><motion.form initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} onSubmit={onSubmit} className="glass-card w-full max-w-md p-6 space-y-4"><h1 className="text-3xl font-black">Create account</h1><input className="glass-panel w-full px-4 py-3" placeholder="Name" value={full_name} onChange={(e)=>setName(e.target.value)} /><input className="glass-panel w-full px-4 py-3" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} /><input type="password" className="glass-panel w-full px-4 py-3" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} />{error && <div className="text-sm text-red-500">{error}</div>}<button className="premium-button w-full">{loading ? 'Creating...' : 'Sign up'}</button><p className="text-sm">Already have an account? <Link to="/login" className="font-bold">Login</Link></p></motion.form></div>
 }
-
