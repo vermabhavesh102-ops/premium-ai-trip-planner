@@ -3,10 +3,14 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import Workspace from './pages/Workspace'
 import Planner from './pages/Planner'
 import TripResults from './pages/TripResults'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/AuthContext'
+import Header from './components/Header'
+import CustomCursor from './components/CustomCursor'
+import Footer from './components/Footer'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -26,6 +30,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <AuthProvider>
+      <CustomCursor />
+      <Header />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -44,31 +50,17 @@ function App() {
           path="/workspace"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Workspace />
             </ProtectedRoute>
           }
         />
 
-        <Route
-          path="/planner"
-          element={
-            <ProtectedRoute>
-              <Planner />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/trip-results"
-          element={
-            <ProtectedRoute>
-              <TripResults />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/planner" element={<Planner />} />
+        <Route path="/trip-results" element={<TripResults />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Footer />
     </AuthProvider>
   )
 }

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import ThemeToggle from '../components/ThemeToggle'
 
 type TripResponse = {
   destination: string
@@ -53,17 +52,6 @@ export default function TripResults() {
 
   return (
     <div className="min-h-screen premium-bg text-slate-900 dark:text-white pb-20">
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/35 dark:bg-slate-950/30 border-b border-white/30 dark:border-white/10">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <div className="font-black">Trip Results • {trip.destination}</div>
-          <div className="flex items-center gap-2">
-            <Link to="/planner" className="luxury-chip">Back to Planner</Link>
-            <Link to="/workspace" className="luxury-chip">Open Dashboard</Link>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-4">
         <section className="grid md:grid-cols-3 gap-3">
           <div className="glass-panel p-4"><div className="text-xs text-slate-500">Trip duration</div><div className="font-black">{trip.duration_days} days</div></div>
