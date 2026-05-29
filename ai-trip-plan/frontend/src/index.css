@@ -1,16 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   color-scheme: light;
-  --bg: #f5f8ff;
-  --fg: #0f172a;
+  --bg: #f5eee4;
+  --fg: #111827;
+  --panel: #ffffff;
+  --panel-soft: #f8f2e8;
+  --border: #dfd2c2;
+  --muted: #6b7280;
+  --accent: #b98f56;
+  --accent-soft: #f5e7c9;
 }
+
 .dark {
   color-scheme: dark;
-  --bg: #040711;
-  --fg: #ecf2ff;
+  --bg: #080f18;
+  --fg: #f8fafc;
+  --panel: #0f172a;
+  --panel-soft: #111827;
+  --border: #1f2937;
+  --muted: #94a3b8;
+  --accent: #7c3aed;
 }
 
 html,
@@ -21,7 +35,7 @@ body {
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 #root {
@@ -29,43 +43,61 @@ body {
 }
 
 @layer utilities {
+  .card {
+    @apply rounded-2xl bg-white border border-slate-200 shadow-sm;
+  }
+
+  .card-lg {
+    @apply rounded-3xl bg-white border border-slate-200 shadow-md;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-full bg-slate-950 text-white font-semibold hover:bg-slate-900 transition shadow-lg shadow-slate-900/10;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-full border border-slate-300 bg-white text-slate-900 font-semibold hover:bg-slate-50 transition;
+  }
+
+  .input-field {
+    @apply w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-700;
+  }
+
   .premium-bg {
-    @apply relative overflow-hidden;
-    background:
-      radial-gradient(1200px 500px at -10% -10%, rgba(0, 143, 255, 0.22), transparent 60%),
-      radial-gradient(900px 400px at 110% 10%, rgba(34, 211, 238, 0.16), transparent 60%),
-      linear-gradient(140deg, #f7faff 0%, #eef4ff 35%, #f8fbff 100%);
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(900px 600px at 10% 10%, rgba(219, 176, 114, 0.15), transparent 35%),
+      radial-gradient(700px 500px at 90% 0%, rgba(241, 208, 152, 0.18), transparent 35%),
+      linear-gradient(180deg, #f7efe4 0%, #f4e9df 40%, #f2e5d7 100%);
   }
 
   .dark .premium-bg {
-    background:
-      radial-gradient(1000px 520px at -10% -10%, rgba(0, 143, 255, 0.28), transparent 60%),
-      radial-gradient(900px 450px at 110% 10%, rgba(6, 182, 212, 0.18), transparent 60%),
-      linear-gradient(150deg, #040711 0%, #081229 35%, #050b1a 100%);
+    background: radial-gradient(900px 600px at 10% 10%, rgba(56, 189, 248, 0.16), transparent 35%),
+      radial-gradient(700px 500px at 90% 0%, rgba(168, 85, 247, 0.16), transparent 35%),
+      linear-gradient(180deg, #020617 0%, #08131f 40%, #0d1b2c 100%);
   }
 
   .glass-card {
-    @apply rounded-3xl border border-white/40 dark:border-white/15 bg-white/55 dark:bg-white/10 backdrop-blur-2xl shadow-luxe;
+    @apply rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-900/5;
   }
 
   .glass-panel {
-    @apply rounded-[1.75rem] border border-white/40 dark:border-white/10 bg-white/45 dark:bg-white/5 backdrop-blur-xl shadow-soft;
+    @apply rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm;
   }
 
   .luxury-chip {
-    @apply px-3 py-1.5 rounded-full text-xs font-bold border border-white/40 dark:border-white/10 bg-white/60 dark:bg-white/5;
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-700 transition hover:bg-slate-100;
   }
 
   .premium-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 font-extrabold text-white border border-brand-500/40 bg-gradient-to-r from-brand-500 to-sky-500 shadow-glow hover:brightness-110 transition;
-  }
-
-  .floating-nav {
-    @apply fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] max-w-md rounded-3xl border border-white/45 dark:border-white/10 bg-white/70 dark:bg-slate-950/60 backdrop-blur-2xl shadow-luxe;
+    @apply inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5;
   }
 
   .cinematic-image {
-    @apply w-full h-full object-cover;
-    filter: saturate(1.05) contrast(1.04);
+    @apply h-full w-full object-cover;
   }
 }

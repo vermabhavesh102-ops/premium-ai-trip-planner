@@ -10,16 +10,26 @@ function getStoredToken(): string | null {
   }
 }
 
+function buildHeaders(options: RequestInit = {}, token?: string | null) {
+  const headers = new Headers(options.headers)
+
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const isFormData = options.body instanceof FormData || options.body instanceof URLSearchParams
+  if (!headers.has('Content-Type') && options.body != null && !isFormData) {
+    headers.set('Content-Type', 'application/json')
+  }
+
+  return headers
+}
+
 export async function apiFetch<T = JsonValue>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getStoredToken()
-
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    }
+    headers: buildHeaders(options, token),
   })
 
   if (!res.ok) {

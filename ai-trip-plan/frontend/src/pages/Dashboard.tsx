@@ -1,56 +1,126 @@
-import { motion } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
-import ThemeToggle from '../components/ThemeToggle'
-import { useAuth } from '../context/AuthContext'
+import { Link } from 'react-router-dom'
+
+type SavedTrip = {
+  destination?: string
+  duration_days?: number
+  travelers?: number
+  savedAt?: string
+  planner_meta?: {
+    destination?: { name?: string }
+    interests?: string[]
+    budget?: string
+  }
+}
+
+const formatDate = (value?: string) => {
+  if (!value) return 'Recently'
+
+  return new Intl.DateTimeFormat('en', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value))
+}
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
   const savedTrips = (() => {
     try {
-      return JSON.parse(localStorage.getItem('saved_trips') ?? '[]') as Array<{ destination?: string; duration_days?: number; savedAt?: string }>
+      return JSON.parse(localStorage.getItem('saved_trips') ?? '[]') as SavedTrip[]
     } catch {
       return []
     }
   })()
-  const latestTrip = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('latest_trip') ?? 'null') as { destination?: string; duration_days?: number } | null
-    } catch {
-      return null
-    }
-  })()
-  const cards = [
-    ['Upcoming adventure', 'Kyoto Spring Journey', 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80'],
-    ['Memory collection', 'Iceland Northern Lights', 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80'],
-    ['Recommendations', 'Amalfi Coast Escape', 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80']
+
+  const destinations = new Set(
+    savedTrips
+      .map((trip) => trip.destination ?? trip.planner_meta?.destination?.name)
+      .filter(Boolean),
+  )
+  const totalDays = savedTrips.reduce((sum, trip) => sum + (trip.duration_days ?? 0), 0)
+  const interestCounts = savedTrips
+    .flatMap((trip) => trip.planner_meta?.interests ?? [])
+    .reduce<Record<string, number>>((counts, interest) => {
+      counts[interest] = (counts[interest] ?? 0) + 1
+      return counts
+    }, {})
+  const topInterest =
+    Object.entries(interestCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '-'
+  const stats = [
+    ['Trips planned', savedTrips.length],
+    ['Total days', totalDays],
+    ['Destinations', destinations.size],
+    ['Top interest', topInterest],
   ]
 
   return (
-    <div className="min-h-screen premium-bg text-slate-900 dark:text-white pb-28">
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/35 dark:bg-slate-950/30 border-b border-white/30 dark:border-white/10">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <div><div className="font-black">Travel Workspace</div><div className="text-xs">Welcome, {user?.full_name ?? 'Traveler'}</div></div>
-          <div className="flex gap-2 items-center"><Link to="/planner" className="luxury-chip">Planner</Link><Link to="/trip-results" className="luxury-chip">View Itinerary</Link><button onClick={()=>{logout();navigate('/')}} className="luxury-chip">Logout</button><ThemeToggle /></div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 space-y-5">
-        <section className="grid md:grid-cols-3 gap-4">{[[String(savedTrips.length || 14),'Saved journeys'],['6','Upcoming trips'],['24','AI recommendations']].map(([v,t])=><div key={t} className="glass-panel p-5"><div className="text-3xl font-black">{v}</div><div className="text-sm text-slate-600 dark:text-slate-300">{t}</div></div>)}</section>
-        <section className="grid md:grid-cols-2 gap-4">
-          <article className="glass-card p-4">
-            <div className="font-black mb-2">Recently generated trips</div>
-            {latestTrip ? <div className="text-sm">{latestTrip.destination} • {latestTrip.duration_days} days</div> : <div className="text-sm text-slate-600 dark:text-slate-300">No recent generation yet.</div>}
-            <div className="mt-3"><Link to="/trip-results" className="luxury-chip">View Itinerary</Link></div>
-          </article>
-          <article className="glass-card p-4">
-            <div className="font-black mb-2">Travel collections</div>
-            <div className="text-sm text-slate-600 dark:text-slate-300">Luxury escapes, mountain retreats, family picks and weekend getaways.</div>
-            <div className="mt-3 flex gap-2"><Link to="/planner" className="luxury-chip">Plan new</Link><Link to="/workspace" className="luxury-chip">Workspace</Link></div>
-          </article>
+    <div className="min-h-[calc(100vh-92px)] bg-[#f6f1ea] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <main className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
+        <p className="text-[11px] font-medium uppercase tracking-[0.45em] text-[#9a7650]">
+          Dashboard
+        </p>
+        <h1 className="mt-2 font-['Playfair_Display'] text-5xl font-bold leading-none tracking-normal sm:text-6xl">
+          Travel at a glance
+        </h1>
+
+        <section className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map(([label, value]) => (
+            <article
+              key={label}
+              className="min-h-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900"
+            >
+              <p className="text-[10px] font-medium uppercase tracking-[0.45em] text-slate-500">
+                {label}
+              </p>
+              <p className="mt-5 font-['Playfair_Display'] text-3xl font-bold leading-none">
+                {value}
+              </p>
+            </article>
+          ))}
         </section>
-        <section className="grid md:grid-cols-3 gap-4">{cards.map(([k,t,img])=><motion.article whileHover={{y:-6}} key={t} className="glass-card overflow-hidden"><div className="h-44"><img src={img} alt={t} className="cinematic-image"/></div><div className="p-4"><div className="text-xs text-slate-500">{k}</div><div className="font-black text-lg">{t}</div></div></motion.article>)}</section>
+
+        <section className="mt-12">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="font-['Playfair_Display'] text-2xl font-bold tracking-normal">
+              Recent activity
+            </h2>
+            <Link
+              to="/workspace"
+                className="border-b border-[#d5b487] text-sm font-medium text-slate-800 transition hover:text-[#9a7650] dark:text-slate-200"
+            >
+              View all
+            </Link>
+          </div>
+
+          {savedTrips.length === 0 ? (
+            <p className="mt-6 text-sm text-slate-600 dark:text-slate-400">
+              No activity yet.{' '}
+              <Link to="/planner" className="border-b border-[#d5b487] text-slate-700 dark:text-slate-200">
+                Plan a trip.
+              </Link>
+            </p>
+          ) : (
+            <div className="mt-5 divide-y divide-[#e4dfd7] border-y border-[#e4dfd7] dark:divide-slate-800 dark:border-slate-800">
+              {savedTrips.slice(0, 3).map((trip, index) => (
+                <Link
+                  key={`${trip.destination ?? 'trip'}-${trip.savedAt ?? index}`}
+                  to="/trip-results"
+                  className="flex flex-col justify-between gap-2 py-4 text-sm transition hover:text-[#9a7650] sm:flex-row sm:items-center"
+                >
+                  <span>
+                    <span className="block font-semibold text-slate-950 dark:text-white">
+                      {trip.destination ?? 'Untitled trip'}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                      {trip.duration_days ?? 0} days - {trip.travelers ?? 0} travelers - {trip.planner_meta?.budget ?? 'mid'}
+                    </span>
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(trip.savedAt)}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
-      <div className="floating-nav lg:hidden p-2"><div className="grid grid-cols-3 gap-2"><Link to="/dashboard" className="luxury-chip text-center">Home</Link><Link to="/planner" className="luxury-chip text-center">Planner</Link><button onClick={()=>{logout();navigate('/')}} className="luxury-chip">Exit</button></div></div>
     </div>
   )
 }
