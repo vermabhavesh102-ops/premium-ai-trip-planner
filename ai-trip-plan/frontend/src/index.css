@@ -101,3 +101,38 @@ body {
     @apply h-full w-full object-cover;
   }
 }
+
+/* Custom scrollbar for dropdown - smooth scrolling on desktop and mobile */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5);
+  border-radius: 20px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.8);
+}
+
+.dark .scrollbar-custom {
+  scrollbar-color: rgba(71, 85, 105, 0.6) transparent;
+}
+
+.dark .scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(71, 85, 105, 0.6);
+}
+
+.dark .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.9);
+}

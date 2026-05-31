@@ -125,12 +125,12 @@ const testimonials = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#f6f1ea] text-[#0f1720]">
+    <div className="min-h-screen bg-[#f6f1ea] text-[#0f1720] dark:bg-slate-950 dark:text-slate-100">
       <main>
         <section className="px-5 pb-16 pt-10 sm:px-8 lg:pb-20 lg:pt-14">
           <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.02fr_0.82fr]">
             <div>
-              <p className="inline-flex rounded-full bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 shadow-sm ring-1 ring-slate-200">
+              <p className="inline-flex rounded-full bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
                 Now booking for autumn 2026
               </p>
 
@@ -138,12 +138,12 @@ export default function Home() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.35em] text-[#b88954]">
                   TripZen AI - Autoplanner
                 </p>
-                <h1 className="mt-4 text-5xl font-black leading-[0.95] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
+                <h1 className="mt-4 text-5xl font-black leading-[0.95] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl dark:text-white">
                   Travel with{' '}
                   <span className="italic text-[#c47b20]">intelligence</span>, rest with{' '}
                   <span className="italic">intention</span>.
                 </h1>
-                <p className="mt-6 max-w-lg text-sm leading-7 text-slate-600">
+                <p className="mt-6 max-w-lg text-sm leading-7 text-slate-600 dark:text-slate-300">
                   TripZen AI crafts bespoke itineraries that balance discovery with tranquility.
                   Tell us what you're imagining.
                 </p>
@@ -151,13 +151,13 @@ export default function Home() {
 
               <div className="mt-7 flex max-w-xl flex-col gap-3 sm:flex-row">
                 <input
-                  className="min-h-12 flex-1 rounded-full border border-slate-300 bg-white px-5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#c49a6c] focus:ring-4 focus:ring-[#d7b98e]/20"
+                  className="min-h-12 flex-1 rounded-full border border-slate-300 bg-white px-5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-[#c49a6c] focus:ring-4 focus:ring-[#d7b98e]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                   placeholder="A 10-day slow-travel journey through Tuscany..."
                   aria-label="Travel prompt"
                 />
                 <Link
                   to="/planner"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-7 text-sm font-bold text-white shadow-xl shadow-slate-950/15 transition hover:bg-slate-800"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-7 text-sm font-bold text-white shadow-xl shadow-slate-950/15 transition hover:bg-slate-800 dark:bg-[#d5b487] dark:text-slate-950 dark:hover:bg-[#c7a575]"
                 >
                   Generate itinerary
                 </Link>
@@ -168,7 +168,7 @@ export default function Home() {
                   <button
                     key={chip}
                     type="button"
-                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-[#c49a6c] hover:text-slate-950"
+                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-[#c49a6c] hover:text-slate-950 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-[#d5b487] dark:hover:text-white"
                   >
                     {chip}
                   </button>
@@ -190,11 +190,11 @@ export default function Home() {
 
           <div className="mx-auto mt-16 grid max-w-6xl gap-4 md:grid-cols-3">
             {benefits.map((item) => (
-              <article key={item.title} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+              <article key={item.title} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#c49a6c]">
                   {item.title}
                 </p>
-                <p className="mt-3 text-xs leading-6 text-slate-600">{item.detail}</p>
+                <p className="mt-3 text-xs leading-6 text-slate-600 dark:text-slate-300">{item.detail}</p>
               </article>
             ))}
           </div>
@@ -207,13 +207,13 @@ export default function Home() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[#c47b20]">
                   Curated by TripZen intelligence
                 </p>
-                <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl dark:text-white">
                   Seasonal inspirations
                 </h2>
               </div>
               <Link
                 to="/planner"
-                className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-950 transition hover:text-[#b88954]"
+                className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-950 transition hover:text-[#b88954] dark:text-slate-300 dark:hover:text-[#d5b487]"
               >
                 View all journeys
               </Link>
@@ -223,7 +223,7 @@ export default function Home() {
               {journeyCards.map((journey) => (
                 <article
                   key={journey.title}
-                  className="group overflow-hidden rounded-lg bg-white shadow-lg shadow-slate-900/5 ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-xl"
+                  className="group overflow-hidden rounded-lg bg-white shadow-lg shadow-slate-900/5 ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-xl dark:bg-slate-900 dark:ring-slate-700"
                 >
                   <img
                     src={journey.image}
@@ -234,8 +234,8 @@ export default function Home() {
                     <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#c49a6c]">
                       {journey.label}
                     </p>
-                    <h3 className="mt-2 text-base font-black text-slate-950">{journey.title}</h3>
-                    <p className="mt-1 text-xs font-medium text-slate-500">{journey.subtitle}</p>
+                    <h3 className="mt-2 text-base font-black text-slate-950 dark:text-white">{journey.title}</h3>
+                    <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{journey.subtitle}</p>
                   </div>
                 </article>
               ))}
@@ -243,10 +243,10 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-y border-[#e3ded6] bg-[#f7f3ed] px-5 py-20 sm:px-8 lg:py-28">
+        <section className="border-y border-[#e3ded6] bg-[#f7f3ed] px-5 py-20 sm:px-8 lg:py-28 dark:border-slate-800 dark:bg-slate-900">
           <div className="mx-auto max-w-6xl">
-            <p className="text-xs font-medium uppercase tracking-[0.5em] text-slate-700">The process</p>
-            <h2 className="mt-4 max-w-4xl font-['Playfair_Display'] text-5xl leading-[0.95] tracking-normal text-slate-950 sm:text-6xl lg:text-7xl">
+            <p className="text-xs font-medium uppercase tracking-[0.5em] text-slate-700 dark:text-slate-300">The process</p>
+            <h2 className="mt-4 max-w-4xl font-['Playfair_Display'] text-5xl leading-[0.95] tracking-normal text-slate-950 sm:text-6xl lg:text-7xl dark:text-white">
               Four quiet steps between{' '}
               <span className="italic">idea</span> and{' '}
               <span className="italic text-[#c7a376]">arrival</span>.
@@ -255,14 +255,14 @@ export default function Home() {
             <div className="mt-20 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
               {processSteps.map((step) => (
                 <article key={step.title}>
-                  <div className="h-1 w-full bg-[#dcd7cf]" />
+                  <div className="h-1 w-full bg-[#dcd7cf] dark:bg-slate-700" />
                   <p className="mt-7 font-['Playfair_Display'] text-2xl italic text-[#c7a376]">
                     {step.numeral}
                   </p>
-                  <h3 className="mt-5 font-['Playfair_Display'] text-2xl font-bold text-slate-950">
+                  <h3 className="mt-5 font-['Playfair_Display'] text-2xl font-bold text-slate-950 dark:text-white">
                     {step.title}
                   </h3>
-                  <p className="mt-4 text-base leading-7 text-slate-600">{step.detail}</p>
+                  <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">{step.detail}</p>
                 </article>
               ))}
             </div>
@@ -270,12 +270,12 @@ export default function Home() {
             <div className="mt-28 grid gap-10 md:grid-cols-3">
               {benefits.map((item) => (
                 <article key={item.number}>
-                  <div className="h-1 w-full bg-[#e1ddd6]" />
+                  <div className="h-1 w-full bg-[#e1ddd6] dark:bg-slate-700" />
                   <p className="mt-8 text-sm font-medium text-[#b88954]">{item.number}</p>
-                  <h3 className="mt-6 font-['Playfair_Display'] text-3xl font-bold text-slate-950">
+                  <h3 className="mt-6 font-['Playfair_Display'] text-3xl font-bold text-slate-950 dark:text-white">
                     {item.title}
                   </h3>
-                  <p className="mt-4 text-base leading-8 text-slate-600">{item.detail}</p>
+                  <p className="mt-4 text-base leading-8 text-slate-600 dark:text-slate-300">{item.detail}</p>
                 </article>
               ))}
             </div>
@@ -329,10 +329,10 @@ export default function Home() {
         <section className="px-5 py-16 sm:px-8 lg:py-20">
           <div className="mx-auto max-w-6xl">
             <div className="text-center">
-              <p className="text-xs font-medium uppercase tracking-[0.45em] text-slate-500">
+              <p className="text-xs font-medium uppercase tracking-[0.45em] text-slate-500 dark:text-slate-400">
                 From the journal
               </p>
-              <h2 className="mt-3 font-['Playfair_Display'] text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl">
+              <h2 className="mt-3 font-['Playfair_Display'] text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl dark:text-white">
                 Words from our travelers
               </h2>
             </div>
@@ -341,15 +341,15 @@ export default function Home() {
               {testimonials.map((item) => (
                 <article
                   key={item.name}
-                  className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm"
+                  className="rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-slate-900"
                 >
                   <p className="font-['Playfair_Display'] text-2xl text-[#c49a6c]">"</p>
-                  <p className="mt-6 min-h-28 font-['Playfair_Display'] text-lg leading-7 text-slate-950">
+                  <p className="mt-6 min-h-28 font-['Playfair_Display'] text-lg leading-7 text-slate-950 dark:text-white">
                     {item.quote}
                   </p>
-                  <div className="mt-8 border-t border-slate-200 pt-5">
-                    <p className="text-sm font-bold text-slate-950">{item.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.role}</p>
+                  <div className="mt-8 border-t border-slate-200 pt-5 dark:border-slate-700">
+                    <p className="text-sm font-bold text-slate-950 dark:text-white">{item.name}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{item.role}</p>
                   </div>
                 </article>
               ))}

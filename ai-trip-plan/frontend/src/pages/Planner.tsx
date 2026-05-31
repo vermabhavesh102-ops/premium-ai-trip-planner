@@ -2,19 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/apiClient'
+import SearchDestination from '../components/SearchDestination'
+import type { Destination } from '../data/indianDestinations'
+import { indianDestinations } from '../data/indianDestinations'
+import { searchDestinations as searchGeoDestinations, type GeoResult } from '../lib/geoApi'
 
 type Budget = 'economy' | 'mid' | 'luxury'
-type Suggestion = {
-  name: string
-  region?: string
-  country?: string
-  hero_image: string
-  overview: string
-  highlights?: string[]
-  rating?: number
-}
+type Suggestion = Destination
 type SearchResponse = { query: string; suggestions: Suggestion[] }
 type TripResponse = {
+  id?: string
   destination: string
   source: string
   duration_days: number
@@ -32,7 +29,18 @@ type TripResponse = {
   nearby_places: Array<{ name: string; category: string; rating?: number }>
   restaurants: Array<{ name: string; category: string; rating?: number; address?: string }>
   transport: Array<{ title: string; detail: string }>
+  planner_meta?: {
+    transportPref?: string
+    hotelPref?: string
+    destination?: Suggestion | null
+    aiChips?: string[]
+    interests?: string[]
+    budget?: string
+  }
 }
+
+// Use the centralized destinations data
+const indianStates: Suggestion[] = indianDestinations
 
 const interestsPool = ['Food', 'Culture', 'Nightlife', 'Adventure', 'Luxury', 'Family', 'Nature', 'Shopping']
 const transports = ['Flight + Cab', 'Train + Local Transit', 'Road Trip', 'Metro + Walk']
@@ -40,13 +48,82 @@ const hotels = ['Boutique Hotel', 'Luxury Resort', 'Budget Stay', 'Homestay']
 const fallbackImage =
   'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1400&q=80'
 
+function createLocalTrip({
+  destination,
+  duration,
+  travelers,
+  interests,
+}: {
+  destination: string
+  duration: number
+  travelers: number
+  interests: string[]
+}): TripResponse {
+  return {
+    destination,
+    source: 'local-preview',
+    duration_days: duration,
+    travelers,
+    maps_embed_url: `https://www.google.com/maps?q=${encodeURIComponent(destination)}&output=embed`,
+    weather: { temperature_c: 24, summary: 'Pleasant', source: 'preview' },
+    itinerary: Array.from({ length: duration }, (_, index) => ({
+      day: index + 1,
+      title: `${destination} day ${index + 1}`,
+      estimated_cost: 'Flexible',
+      tips: ['Keep the pace relaxed and confirm timings locally.'],
+      items: [
+        {
+          time: '09:00',
+          title: 'Morning discovery',
+          details: `Start with a calm introduction to ${destination}, shaped around ${interests[0] ?? 'local culture'}.`,
+        },
+        {
+          time: '14:00',
+          title: 'Local experience',
+          details: `Explore a neighborhood, market, viewpoint, or museum matched to your travel style.`,
+        },
+        {
+          time: '19:00',
+          title: 'Evening plan',
+          details: 'Dinner and a slower evening route with time to adjust based on energy and weather.',
+        },
+      ],
+    })),
+    hotels: [
+      {
+        name: `${destination} Boutique Stay`,
+        area: 'Central area',
+        price_note: 'Best value',
+        image: fallbackImage,
+      },
+    ],
+    nearby_places: [
+      { name: `${destination} old quarter`, category: 'Culture', rating: 4.6 },
+      { name: `${destination} viewpoint`, category: 'Scenic', rating: 4.5 },
+    ],
+    restaurants: [
+      {
+        name: `${destination} local table`,
+        category: 'Regional',
+        rating: 4.5,
+        address: 'Near the central district',
+      },
+    ],
+    transport: [
+      {
+        title: 'Arrival transfer',
+        detail: 'Use a pre-booked cab or local transit depending on arrival time.',
+      },
+    ],
+  }
+}
+
 export default function Planner() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [searchLoading, setSearchLoading] = useState(false)
   const [destination, setDestination] = useState<Suggestion | null>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
 
   const [travelers, setTravelers] = useState(2)
   const [budget, setBudget] = useState<Budget>('mid')
@@ -60,38 +137,69 @@ export default function Planner() {
   const previewTitle = destinationName || 'Search your destination'
   const previewMeta = `${duration} days - ${travelers} ${travelers === 1 ? 'traveler' : 'travelers'} - ${budget}`
 
+  const [editingTripId, setEditingTripId] = useState<string | null>(null)
+
   useEffect(() => {
+    const editDraft = localStorage.getItem('planner_edit_trip')
+    if (editDraft) {
+      try {
+        const trip = JSON.parse(editDraft) as TripResponse
+        setSearch(trip.destination ?? '')
+        setDestination(null)
+        setTravelers(trip.travelers ?? 2)
+        setDuration(trip.duration_days ?? 4)
+        setBudget(
+          trip.planner_meta?.budget === 'economy' ||
+            trip.planner_meta?.budget === 'mid' ||
+            trip.planner_meta?.budget === 'luxury'
+            ? trip.planner_meta.budget
+            : 'mid',
+        )
+        setInterests(trip.planner_meta?.interests?.length ? trip.planner_meta.interests : ['Food', 'Culture'])
+        setTransportPref(trip.planner_meta?.transportPref ?? transports[0])
+        setHotelPref(trip.planner_meta?.hotelPref ?? hotels[0])
+        // Store the trip ID for updating
+        setEditingTripId(trip.id ?? null)
+      } catch {
+        localStorage.removeItem('planner_edit_trip')
+      }
+      localStorage.removeItem('planner_edit_trip')
+      return
+    }
+
     const prefillDestination = searchParams.get('destination')?.trim()
     if (prefillDestination) {
       setSearch(prefillDestination)
     }
   }, [searchParams])
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setSuggestions([])
-      return
+  // API search handler for the SearchDestination component using free Geo API
+  const handleApiSearch = async (query: string): Promise<Destination[]> => {
+    if (!query.trim()) return [];
+    
+    setSearchLoading(true);
+    try {
+      // Use free OpenStreetMap Nominatim API for searching cities and states
+      const geoResults = await searchGeoDestinations(query, 15);
+      
+      // Convert GeoResult to Destination format
+      return geoResults.map((geo: GeoResult) => ({
+        name: geo.name,
+        type: geo.type === 'state' ? 'state' : 'city',
+        region: geo.region,
+        country: geo.country,
+        parentState: geo.parentState,
+        hero_image: `https://source.unsplash.com/1200x800/?${encodeURIComponent(geo.name)}`,
+        overview: `${geo.name} is a ${geo.type} in ${geo.country}.`,
+      }));
+    } catch (error) {
+      console.error('Search error:', error);
+      return [];
+    } finally {
+      setSearchLoading(false);
     }
+  };
 
-    const id = setTimeout(async () => {
-      setSearchLoading(true)
-      try {
-        const res = await apiFetch<SearchResponse>(
-          `/trips/destinations/search?q=${encodeURIComponent(search)}`,
-          { method: 'GET' },
-        )
-        setSuggestions(res.suggestions)
-      } finally {
-        setSearchLoading(false)
-      }
-    }, 260)
-
-    return () => clearTimeout(id)
-  }, [search])
-
-  useEffect(() => {
-    if (!destination && suggestions.length) setDestination(suggestions[0])
-  }, [suggestions, destination])
 
   const aiChips = useMemo(
     () => [
@@ -108,18 +216,25 @@ export default function Planner() {
 
     setLoading(true)
     try {
-      const res = await apiFetch<TripResponse>('/trips/generate', {
-        method: 'POST',
-        body: JSON.stringify({
-          destination: destinationName,
-          budget,
-          travelers,
-          duration_days: duration,
-          interests,
-        }),
-      })
+      let res: TripResponse
+      try {
+        res = await apiFetch<TripResponse>('/trips/generate', {
+          method: 'POST',
+          body: JSON.stringify({
+            destination: destinationName,
+            budget,
+            travelers,
+            duration_days: duration,
+            interests,
+          }),
+        })
+      } catch {
+        res = createLocalTrip({ destination: destinationName, duration, travelers, interests })
+      }
+
       const generatedTrip = {
         ...res,
+        id: editingTripId || crypto.randomUUID(),
         savedAt: new Date().toISOString(),
         planner_meta: {
           transportPref,
@@ -133,8 +248,35 @@ export default function Planner() {
       localStorage.setItem('latest_trip', JSON.stringify(generatedTrip))
 
       const savedTrips = JSON.parse(localStorage.getItem('saved_trips') ?? '[]') as TripResponse[]
-      localStorage.setItem('saved_trips', JSON.stringify([generatedTrip, ...savedTrips]))
-      setTimeout(() => navigate('/trip-results'), 850)
+      
+      // Check if we're editing an existing trip
+      if (editingTripId) {
+        // Update the existing trip instead of creating a new one
+        const updatedTrips = savedTrips.map((trip) =>
+          trip.id === editingTripId ? generatedTrip : trip
+        )
+        localStorage.setItem('saved_trips', JSON.stringify(updatedTrips))
+        setEditingTripId(null)
+        
+        // Navigate with edit success toast
+        navigate('/workspace', {
+          state: {
+            workspaceToast: true,
+            destination: generatedTrip.destination,
+            isEdit: true,
+          },
+        })
+      } else {
+        // Create new trip
+        localStorage.setItem('saved_trips', JSON.stringify([generatedTrip, ...savedTrips]))
+        navigate('/workspace', {
+          state: {
+            workspaceToast: true,
+            destination: generatedTrip.destination,
+            isEdit: false,
+          },
+        })
+      }
     } finally {
       setLoading(false)
     }
@@ -142,7 +284,6 @@ export default function Planner() {
 
   const resetPlanner = () => {
     setSearch('')
-    setSuggestions([])
     setDestination(null)
     setTravelers(2)
     setBudget('mid')
@@ -187,45 +328,21 @@ export default function Planner() {
 
         <article className="max-h-none overflow-y-visible pr-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-3">
           <div className="space-y-8">
-            <div>
+            <div className="relative">
               <label className="text-sm font-bold">1) Search / select destination</label>
-              <input
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setDestination(null)
-                }}
-                placeholder="Delhi, Goa, Jaipur, Tokyo..."
-                className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#c7a575] focus:ring-4 focus:ring-[#d5b487]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              />
-            </div>
-
-            {searchLoading ? (
-              <div className="h-12 rounded-2xl bg-slate-100 animate-pulse dark:bg-slate-800" />
-            ) : (
-              <div className="max-h-44 space-y-2 overflow-auto">
-                {suggestions.slice(0, 5).map((s) => (
-                  <button
-                    key={`${s.name}-${s.region}`}
-                    type="button"
-                    onClick={() => {
-                      setDestination(s)
-                      setSearch(s.name)
-                    }}
-                    className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
-                      destination?.name === s.name
-                        ? 'border-[#c7a575] bg-[#fbf6ee] dark:bg-slate-800'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="font-semibold">{s.name}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {s.region} {s.country ? `- ${s.country}` : ''}
-                    </div>
-                  </button>
-                ))}
+              <div className="mt-3">
+                <SearchDestination
+                  value={search}
+                  onChange={setSearch}
+                  onSelect={setDestination}
+                  selectedDestination={destination}
+                  placeholder="Delhi, Goa, Jaipur, Tokyo..."
+                  onApiSearch={handleApiSearch}
+                  isLoading={searchLoading}
+                  maxSuggestions={10}
+                />
               </div>
-            )}
+            </div>
 
             <div>
               <div className="mb-3 text-sm font-bold">2) Travelers selector: {travelers}</div>
