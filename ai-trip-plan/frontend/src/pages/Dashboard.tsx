@@ -54,33 +54,33 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-[calc(100vh-92px)] bg-[#f6f1ea] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
-      <main className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
+      <main className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
         <p className="text-[11px] font-medium uppercase tracking-[0.45em] text-[#9a7650]">
           Dashboard
         </p>
-        <h1 className="mt-2 font-['Playfair_Display'] text-5xl font-bold leading-none tracking-normal sm:text-6xl">
+        <h1 className="mt-2 font-['Playfair_Display'] text-4xl font-bold leading-none tracking-normal sm:text-5xl">
           Travel at a glance
         </h1>
 
-        <section className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map(([label, value]) => (
             <article
               key={label}
-              className="min-h-24 rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900"
+              className="min-h-20 rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900"
             >
               <p className="text-[10px] font-medium uppercase tracking-[0.45em] text-slate-500">
                 {label}
               </p>
-              <p className="mt-5 font-['Playfair_Display'] text-3xl font-bold leading-none">
+              <p className="mt-4 font-['Playfair_Display'] text-2xl font-bold leading-none">
                 {value}
               </p>
             </article>
           ))}
         </section>
 
-        <section className="mt-12">
+        <section className="mt-10">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="font-['Playfair_Display'] text-2xl font-bold tracking-normal">
+            <h2 className="font-['Playfair_Display'] text-xl font-bold tracking-normal">
               Recent activity
             </h2>
             <Link
