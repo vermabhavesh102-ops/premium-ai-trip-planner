@@ -27,7 +27,11 @@ export default function Login() {
       login(token.access_token)
       navigate('/planner')
     } catch (e: any) {
-      setError(e?.message ?? 'Login failed')
+      // Extract detailed error message
+      const errorMessage = typeof e === 'string' 
+        ? e 
+        : e?.message || e?.detail || JSON.stringify(e) || 'Login failed'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
