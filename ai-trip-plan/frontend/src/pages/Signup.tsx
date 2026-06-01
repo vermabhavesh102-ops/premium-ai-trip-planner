@@ -29,7 +29,11 @@ export default function Signup() {
       login(token.access_token)
       navigate('/planner')
     } catch (e: any) {
-      setError(e?.message ?? 'Signup failed')
+      // Extract detailed error message
+      const errorMessage = typeof e === 'string' 
+        ? e 
+        : e?.message || e?.detail || JSON.stringify(e) || 'Signup failed'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

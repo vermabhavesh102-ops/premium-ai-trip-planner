@@ -39,9 +39,28 @@ export async function apiFetch<T = JsonValue>(path: string, options: RequestInit
     } catch {
       detail = await res.text()
     }
-    const message = typeof detail === 'string' ? detail : detail?.detail ?? `Request failed: ${res.status}`
-    const err = new Error(message) as Error & { status?: number }
+    // Extract meaningful error message from various error formats
+    let message = `Request failed: ${res.status}`
+    if (typeof detail === 'string') {
+      message = detail
+    } else if (detail?.detail) {
+      // FastAPI returns errors in 'detail' field
+      if (Array.isArray(detail.detail)) {
+        // Validation errors are an array
+        message = detail.detail.map((d: any) => d.msg || d.message || JSON.stringify(d)).join('; ')
+      } else if (typeof detail.detail === 'string') {
+        message = detail.detail
+      } else if (typeof detail.detail === 'object') {
+        message = JSON.stringify(detail.detail)
+      }
+    } else if (detail?.message) {
+      message = detail.message
+    } else if (detail?.error) {
+      message = typeof detail.error === 'string' ? detail.error : JSON.stringify(detail.error)
+    }
+    const err = new Error(message) as Error & { status?: number; detail?: any }
     err.status = res.status
+    err.detail = detail
     throw err
   }
 
