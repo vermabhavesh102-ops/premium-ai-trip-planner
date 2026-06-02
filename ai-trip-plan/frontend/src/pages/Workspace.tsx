@@ -161,6 +161,7 @@ export default function Workspace() {
           >
             + New trip
           </Link>
+          
         </section>
 
         {savedTrips.length === 0 ? (
@@ -261,7 +262,7 @@ export default function Workspace() {
                     state={{ trip }}
                     className="text-sm font-medium text-slate-600 transition hover:text-[#9a7650] dark:text-slate-300"
                   >
-                    View itinerary
+                    AI Travel Guide
                   </Link>
                 </div>
               </article>

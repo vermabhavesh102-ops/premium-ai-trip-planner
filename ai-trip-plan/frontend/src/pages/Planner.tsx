@@ -460,7 +460,7 @@ export default function Planner() {
                 onClick={generateItinerary}
                 disabled={!destinationName || loading}
               >
-                {loading ? 'Generating itinerary...' : 'Generate itinerary'}
+                {loading ? 'Generating itinerary...' : 'Generate Trip'}
               </button>
               <button
                 type="button"
