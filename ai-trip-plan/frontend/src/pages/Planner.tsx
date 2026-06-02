@@ -32,6 +32,8 @@ type TripResponse = {
   planner_meta?: {
     transportPref?: string
     hotelPref?: string
+    startLocation?: string
+    startDestination?: Suggestion | null
     destination?: Suggestion | null
     aiChips?: string[]
     interests?: string[]
@@ -121,6 +123,8 @@ function createLocalTrip({
 export default function Planner() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const [startSearch, setStartSearch] = useState('')
+  const [startDestination, setStartDestination] = useState<Suggestion | null>(null)
   const [search, setSearch] = useState('')
   const [destination, setDestination] = useState<Suggestion | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
@@ -133,8 +137,10 @@ export default function Planner() {
   const [hotelPref, setHotelPref] = useState(hotels[0])
   const [loading, setLoading] = useState(false)
 
+  const startLocationName = startDestination?.name ?? startSearch.trim()
   const destinationName = destination?.name ?? search.trim()
   const previewTitle = destinationName || 'Search your destination'
+  const routePreview = startLocationName && destinationName ? `${startLocationName} → ${destinationName}` : previewTitle
   const previewMeta = `${duration} days - ${travelers} ${travelers === 1 ? 'traveler' : 'travelers'} - ${budget}`
 
   const [editingTripId, setEditingTripId] = useState<string | null>(null)
@@ -144,6 +150,8 @@ export default function Planner() {
     if (editDraft) {
       try {
         const trip = JSON.parse(editDraft) as TripResponse
+        setStartSearch(trip.planner_meta?.startLocation ?? '')
+        setStartDestination(trip.planner_meta?.startDestination ?? null)
         setSearch(trip.destination ?? '')
         setDestination(null)
         setTravelers(trip.travelers ?? 2)
@@ -212,7 +220,7 @@ export default function Planner() {
   )
 
   const generateItinerary = async () => {
-    if (!destinationName) return
+    if (!startLocationName || !destinationName) return
 
     setLoading(true)
     try {
@@ -222,6 +230,7 @@ export default function Planner() {
           method: 'POST',
           body: JSON.stringify({
             destination: destinationName,
+            start_location: startLocationName,
             budget,
             travelers,
             duration_days: duration,
@@ -239,6 +248,8 @@ export default function Planner() {
         planner_meta: {
           transportPref,
           hotelPref,
+          startLocation: startLocationName,
+          startDestination,
           destination,
           aiChips,
           interests,
@@ -283,6 +294,8 @@ export default function Planner() {
   }
 
   const resetPlanner = () => {
+    setStartSearch('')
+    setStartDestination(null)
     setSearch('')
     setDestination(null)
     setTravelers(2)
@@ -314,7 +327,7 @@ export default function Planner() {
                 Where to next?
               </p>
               <h1 className="mt-4 font-['Playfair_Display'] text-5xl font-bold leading-none tracking-normal">
-                {previewTitle}
+                {routePreview}
               </h1>
               <p className="mt-4 text-sm font-bold text-white/85">{previewMeta}</p>
               {(destination?.region || destination?.country) && (
@@ -329,18 +342,73 @@ export default function Planner() {
         <article className="max-h-none overflow-y-visible pr-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-3">
           <div className="space-y-8">
             <div className="relative">
-              <label className="text-sm font-bold">1) Search / select destination</label>
-              <div className="mt-3">
-                <SearchDestination
-                  value={search}
-                  onChange={setSearch}
-                  onSelect={setDestination}
-                  selectedDestination={destination}
-                  placeholder="Delhi, Goa, Jaipur, Tokyo..."
-                  onApiSearch={handleApiSearch}
-                  isLoading={searchLoading}
-                  maxSuggestions={10}
-                />
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <label className="text-sm font-bold">1) Choose your route</label>
+                <span className="rounded-full bg-white/70 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#9a7650] ring-1 ring-[#e3d4bf] dark:bg-slate-900 dark:text-[#d5b487] dark:ring-slate-700">
+                  Start → End
+                </span>
+              </div>
+              <div className="rounded-[28px] border border-[#e1d5c5] bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+                <div className="relative grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-start">
+                  <div>
+                    <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-sm text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">●</span>
+                      Start from
+                    </div>
+                    <SearchDestination
+                      value={startSearch}
+                      onChange={(value) => {
+                        setStartSearch(value)
+                        if (!value.trim()) setStartDestination(null)
+                      }}
+                      onSelect={setStartDestination}
+                      selectedDestination={startDestination}
+                      placeholder="Your city, airport, station..."
+                      onApiSearch={handleApiSearch}
+                      isLoading={searchLoading}
+                      maxSuggestions={8}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-center pt-1 lg:pt-9">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#eadbc8] bg-[#fbf6ee] text-lg font-black text-[#9a7650] shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-[#d5b487] lg:h-12 lg:w-12">
+                      →
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f0dfc9] text-sm text-[#9a7650] dark:bg-[#d5b487]/15 dark:text-[#d5b487]">◆</span>
+                      Going to
+                    </div>
+                    <SearchDestination
+                      value={search}
+                      onChange={(value) => {
+                        setSearch(value)
+                        if (!value.trim()) setDestination(null)
+                      }}
+                      onSelect={setDestination}
+                      selectedDestination={destination}
+                      placeholder="Delhi, Goa, Jaipur, Tokyo..."
+                      onApiSearch={handleApiSearch}
+                      isLoading={searchLoading}
+                      maxSuggestions={8}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-[#f7efe4] px-4 py-3 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                  {startLocationName || destinationName ? (
+                    <span>
+                      Route preview:{' '}
+                      <strong className="text-slate-950 dark:text-white">{startLocationName || 'Start point'}</strong>
+                      <span className="mx-2 text-[#c7a575]">→</span>
+                      <strong className="text-slate-950 dark:text-white">{destinationName || 'Destination'}</strong>
+                    </span>
+                  ) : (
+                    'Select where your trip starts and where you want to go.'
+                  )}
+                </div>
               </div>
             </div>
 
@@ -458,7 +526,7 @@ export default function Planner() {
               <button
                 className="min-h-12 flex-1 rounded-full bg-[#c7a575] px-6 text-sm font-bold text-white shadow-xl shadow-slate-900/10 transition hover:bg-[#b89564] disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={generateItinerary}
-                disabled={!destinationName || loading}
+                disabled={!startLocationName || !destinationName || loading}
               >
                 {loading ? 'Generating itinerary...' : 'Generate Trip'}
               </button>
