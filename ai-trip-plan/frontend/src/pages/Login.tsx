@@ -19,10 +19,10 @@ export default function Login() {
     setLoading(true)
     setError('')
     try {
-      const form = new URLSearchParams()
-      form.set('username', email)
-      form.set('password', password)
-      const token = await apiFetch<TokenResponse>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form })
+      const token = await apiFetch<TokenResponse>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username: email, password }),
+      })
       storeToken(token.access_token)
       login(token.access_token)
       navigate('/planner')

@@ -12,6 +12,7 @@ export default function Signup() {
   const [full_name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -20,18 +21,21 @@ export default function Signup() {
     setLoading(true)
     setError('')
     try {
-      await apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ full_name, email, password }) })
-      const form = new URLSearchParams()
-      form.set('username', email)
-      form.set('password', password)
-      const token = await apiFetch<TokenResponse>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form })
+      await apiFetch('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ full_name, email, username, password }),
+      })
+      const token = await apiFetch<TokenResponse>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      })
       storeToken(token.access_token)
       login(token.access_token)
       navigate('/planner')
     } catch (e: any) {
       // Extract detailed error message
-      const errorMessage = typeof e === 'string' 
-        ? e 
+      const errorMessage = typeof e === 'string'
+        ? e
         : e?.message || e?.detail || JSON.stringify(e) || 'Signup failed'
       setError(errorMessage)
     } finally {
@@ -39,5 +43,5 @@ export default function Signup() {
     }
   }
 
-  return <div className="min-h-screen premium-bg flex items-center justify-center p-4"><motion.form initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} onSubmit={onSubmit} className="glass-card w-full max-w-md p-6 space-y-4"><h1 className="text-3xl font-black">Create account</h1><input className="glass-panel w-full px-4 py-3" placeholder="Name" value={full_name} onChange={(e)=>setName(e.target.value)} /><input className="glass-panel w-full px-4 py-3" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} /><input type="password" className="glass-panel w-full px-4 py-3" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} />{error && <div className="text-sm text-red-500">{error}</div>}<button className="premium-button w-full">{loading ? 'Creating...' : 'Sign up'}</button><p className="text-sm">Already have an account? <Link to="/login" className="font-bold">Login</Link></p></motion.form></div>
+  return <div className="min-h-screen premium-bg flex items-center justify-center p-4"><motion.form initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} onSubmit={onSubmit} className="glass-card w-full max-w-md p-6 space-y-4"><h1 className="text-3xl font-black">Create account</h1><input className="glass-panel w-full px-4 py-3" placeholder="Name" value={full_name} onChange={(e)=>setName(e.target.value)} /><input className="glass-panel w-full px-4 py-3" placeholder="Username" value={username} onChange={(e)=>setUsername(e.target.value)} /><input className="glass-panel w-full px-4 py-3" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} /><input type="password" className="glass-panel w-full px-4 py-3" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} />{error && <div className="text-sm text-red-500">{error}</div>}<button className="premium-button w-full">{loading ? 'Creating...' : 'Sign up'}</button><p className="text-sm">Already have an account? <Link to="/login" className="font-bold">Login</Link></p></motion.form></div>
 }

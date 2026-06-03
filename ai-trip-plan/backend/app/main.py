@@ -18,7 +18,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+    # NOTE: FastAPI auth was removed to avoid token incompatibility with Django SimpleJWT.
+    # Django handles auth under: /api/auth/*
+    # (users.urls is included in trip_backend/urls.py)
+    # app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+
 
     @app.get("/api/health")
     async def health():

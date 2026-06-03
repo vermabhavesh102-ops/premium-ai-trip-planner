@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { readSavedTrips } from '../lib/tripStorage'
 
 type SavedTrip = {
   id?: string
+  itinerary_id?: string
   destination?: string
   duration_days?: number
   travelers?: number
@@ -20,27 +22,6 @@ type ToastState = {
   type: 'add' | 'edit' | 'delete'
   title: string
   detail?: string
-}
-
-const readSavedTrips = () => {
-  try {
-    const trips = JSON.parse(localStorage.getItem('saved_trips') ?? '[]') as SavedTrip[]
-    // Assign IDs to trips that don't have one (backward compatibility)
-    let hasUpdates = false
-    const updatedTrips = trips.map((trip) => {
-      if (!trip.id) {
-        trip.id = crypto.randomUUID()
-        hasUpdates = true
-      }
-      return trip
-    })
-    if (hasUpdates) {
-      localStorage.setItem('saved_trips', JSON.stringify(updatedTrips))
-    }
-    return updatedTrips
-  } catch {
-    return []
-  }
 }
 
 const formatDate = (value?: string) => {
@@ -74,20 +55,15 @@ export default function Workspace() {
       : null,
   )
 
-  const deleteTrip = (indexToDelete: number) => {
-    const deletedTrip = savedTrips[indexToDelete]
-    const nextTrips = savedTrips.filter((_, index) => index !== indexToDelete)
+  const deleteTrip = (tripToDelete: SavedTrip) => {
+    const nextTrips = savedTrips.filter((trip) => trip.id !== tripToDelete.id)
     setSavedTrips(nextTrips)
     localStorage.setItem('saved_trips', JSON.stringify(nextTrips))
     setToast({
       type: 'delete',
       title: 'Deleted from workspace!',
-      detail: deletedTrip?.destination ? `${deletedTrip.destination} was removed.` : undefined,
+      detail: tripToDelete.destination ? `${tripToDelete.destination} was removed.` : undefined,
     })
-  }
-
-  const editTrip = (trip: SavedTrip) => {
-    localStorage.setItem('planner_edit_trip', JSON.stringify(trip))
   }
 
   const closeToast = () => {
@@ -184,7 +160,7 @@ export default function Workspace() {
           <section className="mt-10 grid gap-5 lg:grid-cols-2">
             {savedTrips.map((trip, index) => (
               <article
-                key={`${trip.destination ?? 'trip'}-${trip.savedAt ?? index}`}
+                key={trip.itinerary_id ?? trip.id ?? `${trip.destination ?? 'trip'}-${trip.savedAt ?? index}`}
                 className="rounded-[24px] border border-slate-200 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900"
               >
                 <div className="flex items-start justify-between gap-4">
@@ -244,20 +220,19 @@ export default function Workspace() {
                 <div className="mt-7 flex flex-wrap items-center gap-4">
                   <button
                     type="button"
-                    onClick={() => deleteTrip(index)}
+                    onClick={() => deleteTrip(trip)}
                     className="text-sm font-medium text-slate-600 transition hover:text-red-600 dark:text-slate-300 dark:hover:text-red-300"
                   >
                     Delete
                   </button>
                   <Link
-                    to="/planner"
-                    onClick={() => editTrip(trip)}
+                    to={`/planner/${trip.itinerary_id ?? trip.id}/edit`}
                     className="text-sm font-medium text-slate-600 transition hover:text-[#9a7650] dark:text-slate-300"
                   >
                     Edit
                   </Link>
                   <Link
-                    to="/trip-results"
+                    to={`/workspace/itinerary/${trip.itinerary_id ?? trip.id}`}
                     state={{ trip }}
                     className="text-sm font-medium text-slate-600 transition hover:text-[#9a7650] dark:text-slate-300"
                   >

@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
+import { readSavedTrips } from '../lib/tripStorage'
 
 type SavedTrip = {
+  id?: string
+  itinerary_id?: string
   destination?: string
   duration_days?: number
   travelers?: number
@@ -23,13 +26,7 @@ const formatDate = (value?: string) => {
 }
 
 export default function Dashboard() {
-  const savedTrips = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('saved_trips') ?? '[]') as SavedTrip[]
-    } catch {
-      return []
-    }
-  })()
+  const savedTrips = readSavedTrips<SavedTrip>()
 
   const destinations = new Set(
     savedTrips
@@ -102,8 +99,8 @@ export default function Dashboard() {
             <div className="mt-5 divide-y divide-[#e4dfd7] border-y border-[#e4dfd7] dark:divide-slate-800 dark:border-slate-800">
               {savedTrips.slice(0, 3).map((trip, index) => (
                 <Link
-                  key={`${trip.destination ?? 'trip'}-${trip.savedAt ?? index}`}
-                  to="/trip-results"
+                  key={trip.itinerary_id ?? trip.id ?? `${trip.destination ?? 'trip'}-${trip.savedAt ?? index}`}
+                  to={trip.itinerary_id || trip.id ? `/workspace/itinerary/${trip.itinerary_id ?? trip.id}` : '/trip-results'}
                   className="flex flex-col justify-between gap-2 py-4 text-sm transition hover:text-[#9a7650] sm:flex-row sm:items-center"
                 >
                   <span>
