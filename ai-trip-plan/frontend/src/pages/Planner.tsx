@@ -7,6 +7,7 @@ import SearchDestination from '../components/SearchDestination'
 import type { Destination } from '../data/indianDestinations'
 import { indianDestinations } from '../data/indianDestinations'
 import { searchDestinations, type GeoResult } from '../lib/geoApi'
+import { addDaysToDateInput, getInclusiveDayCount } from '../lib/tripDates'
 
 
 type Budget = 'economy' | 'mid' | 'luxury'
@@ -41,6 +42,8 @@ type TripResponse = {
     aiChips?: string[]
     interests?: string[]
     budget?: string
+    startDate?: string
+    endDate?: string
   }
 }
 
@@ -136,6 +139,8 @@ export default function Planner() {
   const [travelers, setTravelers] = useState(2)
   const [budget, setBudget] = useState<Budget>('mid')
   const [duration, setDuration] = useState(4)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [interests, setInterests] = useState<string[]>(['Food', 'Culture'])
   const [transportPref, setTransportPref] = useState(transports[0])
   const [hotelPref, setHotelPref] = useState(hotels[0])
@@ -146,6 +151,9 @@ export default function Planner() {
   const previewTitle = destinationName || 'Search your destination'
   const routePreview = startLocationName && destinationName ? `${startLocationName} → ${destinationName}` : previewTitle
   const previewMeta = `${duration} days - ${travelers} ${travelers === 1 ? 'traveler' : 'travelers'} - ${budget}`
+  const selectedTravelDays = getInclusiveDayCount(startDate, endDate)
+  const hasIncompleteDateRange = Boolean(startDate) !== Boolean(endDate)
+  const hasInvalidDateRange = Boolean(startDate && endDate && (!selectedTravelDays || selectedTravelDays > 60))
 
   const [editingTripId, setEditingTripId] = useState<string | null>(null)
 
@@ -154,8 +162,7 @@ export default function Planner() {
     const editDraft = !routeTrip ? localStorage.getItem('planner_edit_trip') : null
     if (routeTrip || editDraft) {
       try {
-        //const trip = routeTrip ?? (JSON.parse(editDraft ?? '{}') as TripResponse)
-        const trip = JSON.parse(editDraft as string) as TripResponse
+        const trip = routeTrip ?? (JSON.parse(editDraft ?? '{}') as TripResponse)
 
         setStartSearch(trip.planner_meta?.startLocation ?? '')
         setStartDestination(trip.planner_meta?.startDestination ?? null)
@@ -163,6 +170,8 @@ export default function Planner() {
         setDestination(null)
         setTravelers(trip.travelers ?? 2)
         setDuration(trip.duration_days ?? 4)
+        setStartDate(trip.planner_meta?.startDate ?? '')
+        setEndDate(trip.planner_meta?.endDate ?? '')
         setBudget(
           trip.planner_meta?.budget === 'economy' ||
             trip.planner_meta?.budget === 'mid' ||
@@ -226,11 +235,18 @@ export default function Planner() {
     [budget, duration, travelers, transportPref, hotelPref],
   )
 
+  useEffect(() => {
+    if (selectedTravelDays && selectedTravelDays <= 60) {
+      setDuration(selectedTravelDays)
+    }
+  }, [selectedTravelDays])
+
   const generateItinerary = async () => {
-    if (!startLocationName || !destinationName) return
+    if (!startLocationName || !destinationName || hasIncompleteDateRange || hasInvalidDateRange) return
 
     setLoading(true)
     try {
+      const itineraryDuration = selectedTravelDays ?? duration
       let res: TripResponse
       try {
         res = await apiFetch<TripResponse>('/trips/generate', {
@@ -240,12 +256,14 @@ export default function Planner() {
             start_location: startLocationName,
             budget,
             travelers,
-            duration_days: duration,
+            duration_days: itineraryDuration,
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
             interests,
           }),
         })
       } catch {
-        res = createLocalTrip({ destination: destinationName, duration, travelers, interests })
+        res = createLocalTrip({ destination: destinationName, duration: itineraryDuration, travelers, interests })
       }
 
       const generatedTrip = {
@@ -261,6 +279,8 @@ export default function Planner() {
           aiChips,
           interests,
           budget,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
         },
       }
       let tripToStore: TripResponse & { id: string; savedAt: string } = generatedTrip
@@ -316,6 +336,8 @@ export default function Planner() {
     setTravelers(2)
     setBudget('mid')
     setDuration(4)
+    setStartDate('')
+    setEndDate('')
     setInterests(['Food', 'Culture'])
     setTransportPref(transports[0])
     setHotelPref(hotels[0])
@@ -428,15 +450,32 @@ export default function Planner() {
             </div>
 
             <div>
-              <div className="mb-3 text-sm font-bold">2) Travelers selector: {travelers}</div>
-              <input
-                type="range"
-                min={1}
-                max={10}
-                value={travelers}
-                onChange={(e) => setTravelers(Number(e.target.value))}
-                className="w-full accent-[#c7a575]"
-              />
+              <div className="mb-3 text-sm font-bold">2) Number of Travelers</div>
+              <div className="relative flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setTravelers((prev) => Math.max(1, prev - 1))}
+                  className="flex h-9 w-9 items-center justify-center rounded-l-lg border border-r-0 border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  disabled={travelers <= 1}
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  value={travelers}
+                  onChange={(e) => setTravelers(Math.max(1, Number(e.target.value)))}
+                  className="w-20 appearance-none border border-slate-300 bg-white p-2 text-center text-sm font-medium focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  aria-label="Number of Travelers"
+                />
+                <button
+                  type="button"
+                  onClick={() => setTravelers((prev) => prev + 1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-r-lg border border-l-0 border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             <div>
@@ -460,19 +499,74 @@ export default function Planner() {
             </div>
 
             <div>
-              <div className="mb-3 text-sm font-bold">4) Trip duration: {duration} days</div>
-              <input
-                type="range"
-                min={1}
-                max={12}
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full accent-[#c7a575]"
-              />
+              <div className="mb-3 text-sm font-bold">4) Travel dates</div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="rounded-2xl border border-slate-200 bg-white/70 p-4 dark:border-slate-700 dark:bg-slate-900/70">
+                  <span className="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-500">Start date</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setStartDate(value)
+                      if (endDate && value > endDate) setEndDate('')
+                    }}
+                    className="w-full bg-transparent text-sm font-bold outline-none"
+                  />
+                </label>
+                <label className="rounded-2xl border border-slate-200 bg-white/70 p-4 dark:border-slate-700 dark:bg-slate-900/70">
+                  <span className="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-slate-500">End date</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    max={startDate ? addDaysToDateInput(startDate, 59) : undefined}
+                    disabled={!startDate}
+                    onChange={(event) => setEndDate(event.target.value)}
+                    className="w-full bg-transparent text-sm font-bold outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </label>
+              </div>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                {hasIncompleteDateRange
+                  ? 'Select both start and end dates, or leave both empty.'
+                  : 'Selected dates automatically set the itinerary length.'}
+              </p>
             </div>
 
             <div>
-              <div className="mb-3 text-sm font-bold">5) Travel interests</div>
+              <div className="mb-3 text-sm font-bold">5) Trip Duration (Days)</div>
+              <div className="relative flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setDuration((prev) => Math.max(1, prev - 1))}
+                  className="flex h-9 w-9 items-center justify-center rounded-l-lg border border-r-0 border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  disabled={duration <= 1 || Boolean(startDate && endDate)}
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  value={duration}
+                  onChange={(e) => setDuration(Math.max(1, Number(e.target.value)))}
+                  disabled={Boolean(startDate && endDate)}
+                  className="w-20 appearance-none border border-slate-300 bg-white p-2 text-center text-sm font-medium focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  aria-label="Trip Duration (Days)"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDuration((prev) => prev + 1)}
+                  className="flex h-9 w-9 items-center justify-center rounded-r-lg border border-l-0 border-slate-300 bg-slate-100 text-slate-700 transition hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  disabled={Boolean(startDate && endDate)}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-3 text-sm font-bold">6) Travel interests</div>
               <div className="flex flex-wrap gap-2">
                 {interestsPool.map((interest) => (
                   <button
@@ -498,7 +592,7 @@ export default function Planner() {
             </div>
 
             <div>
-              <div className="mb-3 text-sm font-bold">6) Transport preference</div>
+              <div className="mb-3 text-sm font-bold">7) Transport preference</div>
               <div className="flex flex-wrap gap-2">
                 {transports.map((transport) => (
                   <button
@@ -518,7 +612,7 @@ export default function Planner() {
             </div>
 
             <div>
-              <div className="mb-3 text-sm font-bold">7) Hotel preference</div>
+              <div className="mb-3 text-sm font-bold">8) Hotel preference</div>
               <div className="flex flex-wrap gap-2">
                 {hotels.map((hotel) => (
                   <button
@@ -541,7 +635,7 @@ export default function Planner() {
               <button
                 className="min-h-12 flex-1 rounded-full bg-[#c7a575] px-6 text-sm font-bold text-white shadow-xl shadow-slate-900/10 transition hover:bg-[#b89564] disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={generateItinerary}
-                disabled={!startLocationName || !destinationName || loading}
+                disabled={!startLocationName || !destinationName || hasIncompleteDateRange || hasInvalidDateRange || loading}
               >
                 {loading ? 'Generating itinerary...' : 'Generate Trip'}
               </button>

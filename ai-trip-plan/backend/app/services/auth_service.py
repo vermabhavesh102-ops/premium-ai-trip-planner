@@ -14,7 +14,9 @@ class AuthService:
         self.settings = settings
 
     async def signup(self, payload) -> UserRecord:
+        # payload is expected to be a Pydantic UserCreate model (validated at route)
         try:
+            # Create user; repository will hash password
             return await user_repo.create_user(
                 email=payload.email,
                 password=payload.password,
@@ -26,11 +28,17 @@ class AuthService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Email already registered",
                 )
-            raise
+            # Unexpected repository error
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not create user",
+            )
 
     async def login(self, email: str, password: str) -> str:
+        # Verify credentials using repository (handles hashing)
         user = await user_repo.verify_credentials(email=email, password=password)
         if not user:
+            # Do not reveal whether email or password was incorrect
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials",

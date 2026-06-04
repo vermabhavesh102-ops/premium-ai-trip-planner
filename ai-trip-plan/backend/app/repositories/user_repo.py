@@ -26,24 +26,26 @@ class InMemoryUserRepository:
         self._users_by_email: Dict[str, UserRecord] = {}
 
     async def create_user(self, *, email: str, password: str, full_name: str) -> UserRecord:
-        if email in self._users_by_email:
+        # Normalize email to lower-case to prevent duplicates by case
+        norm_email = email.strip().lower()
+        if norm_email in self._users_by_email:
             raise ValueError("email_exists")
 
         rec = UserRecord(
             id=str(uuid.uuid4()),
-            email=email,
-            full_name=full_name,
+            email=norm_email,
+            full_name=full_name.strip(),
             password_hash=hash_password(password),
             created_at="1970-01-01T00:00:00Z",
         )
-        self._users_by_email[email] = rec
+        self._users_by_email[norm_email] = rec
         return rec
 
     async def get_by_email(self, email: str) -> Optional[UserRecord]:
-        return self._users_by_email.get(email)
+        return self._users_by_email.get(email.strip().lower())
 
     async def verify_credentials(self, *, email: str, password: str) -> Optional[UserRecord]:
-        user = self._users_by_email.get(email)
+        user = self._users_by_email.get(email.strip().lower())
         if not user:
             return None
         if not verify_password(password, user.password_hash):
