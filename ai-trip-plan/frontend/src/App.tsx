@@ -8,9 +8,11 @@ import Planner from './pages/Planner'
 import TripResults from './pages/TripResults'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/AuthContext'
+import { Toaster } from 'sonner'
 import Header from './components/Header'
 import CustomCursor from './components/CustomCursor'
 import Footer from './components/Footer'
+import LoginSuccessPopup from './components/LoginSuccessPopup'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -32,6 +34,8 @@ function App() {
     <AuthProvider>
       <CustomCursor />
       <Header />
+      <Toaster richColors position="top-right" />
+      <LoginSuccessPopup />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

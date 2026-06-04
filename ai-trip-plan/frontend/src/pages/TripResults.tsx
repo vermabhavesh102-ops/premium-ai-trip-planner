@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../lib/apiClient'
 import { createTripId, findSavedTrip, upsertSavedTrip } from '../lib/tripStorage'
+import { CalendarDays, MapPin, Moon } from 'lucide-react'
+import { addDaysToDateInput, formatTripDate, getInclusiveDayCount } from '../lib/tripDates'
 
 type TripResponse = {
   id?: string
@@ -17,7 +19,7 @@ type TripResponse = {
   nearby_places: Array<{ name: string; category: string; rating?: number }>
   restaurants: Array<{ name: string; category: string; rating?: number; address?: string }>
   transport: Array<{ title: string; detail: string }>
-  planner_meta?: { transportPref?: string; hotelPref?: string; budget?: string; interests?: string[]; destination?: { name?: string; region?: string; country?: string } }
+  planner_meta?: { transportPref?: string; hotelPref?: string; budget?: string; interests?: string[]; startDate?: string; endDate?: string; destination?: { name?: string; region?: string; country?: string } }
   savedAt?: string
 }
 
@@ -114,6 +116,13 @@ export default function TripResults() {
   // Get destination info
   const destinationRegion = trip.planner_meta?.destination?.region ?? trip.planner_meta?.destination?.name ?? ''
   const destinationCountry = trip.planner_meta?.destination?.country ?? 'India'
+  const startDateLabel = formatTripDate(trip.planner_meta?.startDate)
+  const endDateLabel = formatTripDate(trip.planner_meta?.endDate)
+  const selectedDateDays = getInclusiveDayCount(trip.planner_meta?.startDate, trip.planner_meta?.endDate)
+  const itineraryDays = trip.itinerary.length || trip.duration_days
+  const datesMatchItinerary = selectedDateDays === itineraryDays
+  const tripDays = datesMatchItinerary ? selectedDateDays : itineraryDays
+  const tripNights = Math.max(0, tripDays - 1)
 
   return (
     <div className="min-h-screen premium-bg text-slate-900 dark:text-white pb-20">
@@ -137,6 +146,32 @@ export default function TripResults() {
               <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 {budgetInfo.comfort}
               </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-[28px] border border-[#dfceb7] bg-gradient-to-br from-[#fffaf3] via-white to-[#f5e8d7] p-5 shadow-xl shadow-slate-900/5 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 sm:p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#c7a575] text-white shadow-lg shadow-[#c7a575]/25">
+              <CalendarDays className="h-7 w-7" aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#9a7650] dark:text-[#d5b487]">Trip Duration</p>
+              <h2 className="mt-1 text-xl font-black leading-snug sm:text-2xl">
+                {startDateLabel && endDateLabel && datesMatchItinerary
+                  ? `Trip Duration: ${startDateLabel} - ${endDateLabel}`
+                  : 'Travel dates not selected'}
+              </h2>
+              <div className="mt-3 flex flex-col gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 sm:flex-row sm:flex-wrap sm:gap-5">
+                <span className="flex items-center gap-2">
+                  <Moon className="h-4 w-4 text-[#9a7650] dark:text-[#d5b487]" aria-hidden="true" />
+                  {tripNights} {tripNights === 1 ? 'Night' : 'Nights'} / {tripDays} {tripDays === 1 ? 'Day' : 'Days'}
+                </span>
+                <span className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-[#9a7650] dark:text-[#d5b487]" aria-hidden="true" />
+                  Destination: {trip.destination}
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -165,15 +200,27 @@ export default function TripResults() {
 
         <section className="space-y-3">
           <h2 className="text-2xl font-black">Day-wise itinerary with timings</h2>
-          {trip.itinerary.map((d) => (
+          {trip.itinerary.map((d) => {
+            const dayDate = datesMatchItinerary && trip.planner_meta?.startDate
+              ? formatTripDate(addDaysToDateInput(trip.planner_meta.startDate, d.day - 1))
+              : null
+
+            return (
             <article key={d.day} className="glass-card p-4">
-              <button className="w-full text-left flex items-center justify-between" onClick={() => setOpenDays((p) => ({ ...p, [d.day]: !p[d.day] }))}>
-                <div><div className="font-black">Day {d.day}</div><div className="text-sm">{d.title}</div></div>
+              <button className="w-full text-left flex items-center justify-between gap-4" onClick={() => setOpenDays((p) => ({ ...p, [d.day]: !p[d.day] }))}>
+                <div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <div className="font-black">Day {d.day}</div>
+                    {dayDate && <div className="text-xs font-bold text-[#9a7650] dark:text-[#d5b487]">{dayDate}</div>}
+                  </div>
+                  <div className="text-sm">{d.title}</div>
+                </div>
                 <div className="text-xs">{d.estimated_cost}</div>
               </button>
               {openDays[d.day] && <div className="mt-3 space-y-2">{d.items.map((it) => <div key={`${it.time}-${it.title}`} className="glass-panel p-3 text-sm"><b>{it.time}</b> • {it.title}<div className="text-slate-600 dark:text-slate-300">{it.details}</div></div>)}</div>}
             </article>
-          ))}
+            )
+          })}
         </section>
 
         <section className="grid md:grid-cols-2 gap-4">
