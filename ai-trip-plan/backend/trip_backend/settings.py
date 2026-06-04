@@ -136,13 +136,95 @@ LOGGING = {
     },
 }
 
-MONGO_URI = os.getenv('MONGO_URI') or os.getenv('MONGODB_URI') or 'mongodb://localhost:27017'
-MONGO_DB_NAME = os.getenv('MONGO_DB_NAME') or os.getenv('MONGODB_DB') or 'trip_db'
-MONGO_SERVER_SELECTION_TIMEOUT_MS = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT_MS', '3000'))
+# MongoDB Configuration
+# Security: Never hardcode credentials. Use environment variables or separate components.
+# Preferred option: set MONGO_URI (recommended for Atlas/remote).
+# Example:
+#   MONGO_URI=mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/trip_db?retryWrites=true&w=majority
 
-mongoengine.connect(
-    db=MONGO_DB_NAME,
-    host=MONGO_URI,
-    alias='default',
-    serverSelectionTimeoutMS=MONGO_SERVER_SELECTION_TIMEOUT_MS,
-)
+_MONGO_URI = os.getenv('MONGO_URI', '')
+
+_MONGO_HOST = os.getenv('MONGO_HOST', 'localhost')
+_MONGO_PORT = int(os.getenv('MONGO_PORT', '27017'))
+_MONGO_DB_NAME = os.getenv('MONGO_DB_NAME') or os.getenv('MONGODB_DB', 'trip_db')
+_MONGO_USERNAME = os.getenv('MONGO_USERNAME', '')
+_MONGO_PASSWORD = os.getenv('MONGO_PASSWORD', '')
+_MONGO_AUTH_SOURCE = os.getenv('MONGO_AUTH_SOURCE', 'admin')
+
+_MONGO_SERVER_SELECTION_TIMEOUT_MS = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT_MS', '3000'))
+_MONGO_CONNECT_TIMEOUT_MS = int(os.getenv('MONGO_CONNECT_TIMEOUT_MS', '10000'))
+_MONGO_SOCKET_TIMEOUT_MS = int(os.getenv('MONGO_SOCKET_TIMEOUT_MS', '5000'))
+_MONGO_MAX_POOL_SIZE = int(os.getenv('MONGO_MAX_POOL_SIZE', '50'))
+_MONGO_MIN_POOL_SIZE = int(os.getenv('MONGO_MIN_POOL_SIZE', '10'))
+_MONGO_RETRY_WRITES = os.getenv('MONGO_RETRY_WRITES', 'true').lower() == 'true'
+_MONGO_RETRY_READS = os.getenv('MONGO_RETRY_READS', 'true').lower() == 'true'
+_MONGO_SSL = os.getenv('MONGO_SSL', 'false').lower() == 'true'
+_MONGO_SSL_CA_CERTS = os.getenv('MONGO_SSL_CA_CERTS', '')
+_MONGO_TLS_ALLOW_INVALID_CERTIFICATES = os.getenv('MONGO_TLS_ALLOW_INVALID_CERTIFICATES', 'false').lower() == 'true'
+
+# Build MongoDB connection parameters
+_MONGO_CONNECTION_PARAMS = {
+    'alias': 'default',
+    'serverSelectionTimeoutMS': _MONGO_SERVER_SELECTION_TIMEOUT_MS,
+    'connectTimeoutMS': _MONGO_CONNECT_TIMEOUT_MS,
+    'socketTimeoutMS': _MONGO_SOCKET_TIMEOUT_MS,
+    'maxPoolSize': _MONGO_MAX_POOL_SIZE,
+    'minPoolSize': _MONGO_MIN_POOL_SIZE,
+    'retryWrites': _MONGO_RETRY_WRITES,
+    'retryReads': _MONGO_RETRY_READS,
+}
+
+# If URI is provided, it overrides host/port/username/password composition.
+if _MONGO_URI:
+    _MONGO_CONNECTION_PARAMS['host'] = _MONGO_URI
+    # Some drivers still benefit from specifying db explicitly.
+    _MONGO_CONNECTION_PARAMS['db'] = _MONGO_DB_NAME
+else:
+    _MONGO_CONNECTION_PARAMS.update(
+        {
+            'db': _MONGO_DB_NAME,
+            'host': _MONGO_HOST,
+            'port': _MONGO_PORT,
+        }
+    )
+
+    # Add authentication if credentials are provided
+    if _MONGO_USERNAME and _MONGO_PASSWORD:
+        _MONGO_CONNECTION_PARAMS['username'] = _MONGO_USERNAME
+        _MONGO_CONNECTION_PARAMS['password'] = _MONGO_PASSWORD
+        _MONGO_CONNECTION_PARAMS['authSource'] = _MONGO_AUTH_SOURCE
+
+    # Add SSL/TLS configuration if enabled
+    if _MONGO_SSL:
+        _MONGO_CONNECTION_PARAMS['tls'] = True
+        if _MONGO_SSL_CA_CERTS:
+            _MONGO_CONNECTION_PARAMS['tlsCAFile'] = _MONGO_SSL_CA_CERTS
+        if _MONGO_TLS_ALLOW_INVALID_CERTIFICATES:
+            _MONGO_CONNECTION_PARAMS['tlsAllowInvalidCertificates'] = True
+
+# Establish MongoDB connection with error handling
+try:
+    mongoengine.connect(**_MONGO_CONNECTION_PARAMS)
+    if DEBUG:
+        print("MongoDB connection established.")
+except mongoengine.connection.ConnectionError as e:
+    # Keep behavior: don't crash dev server, but log clearly.
+    if DEBUG:
+        # Avoid logging passwords.
+        redacted = dict(_MONGO_CONNECTION_PARAMS)
+        if 'password' in redacted:
+            redacted['password'] = '***'
+        print(f"Warning: MongoDB connection failed: {e}")
+        print("MongoDB connection params (redacted):", redacted)
+        print("Running without MongoDB connection. Some features may be unavailable.")
+    else:
+        raise
+except Exception as e:
+    if DEBUG:
+        print(f"Warning: Unexpected error connecting to MongoDB: {e}")
+    else:
+        raise
+
+# Expose settings for use in other modules
+MONGO_DB_NAME = _MONGO_DB_NAME
+

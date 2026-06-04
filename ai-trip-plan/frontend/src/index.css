@@ -82,11 +82,11 @@ body {
   }
 
   .glass-card {
-    @apply rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-900/5;
+    @apply rounded-[2rem] border border-slate-200 bg-white text-slate-950 shadow-lg shadow-slate-900/5 dark:border-slate-700 dark:bg-slate-950/90 dark:text-slate-50 dark:shadow-black/30;
   }
 
   .glass-panel {
-    @apply rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm;
+    @apply rounded-3xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm placeholder-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:placeholder-slate-400;
   }
 
   .luxury-chip {
@@ -94,7 +94,7 @@ body {
   }
 
   .premium-button {
-    @apply inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5;
+    @apply inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5 dark:bg-slate-50 dark:text-slate-950 dark:shadow-black/30 dark:hover:bg-white;
   }
 
   .cinematic-image {
