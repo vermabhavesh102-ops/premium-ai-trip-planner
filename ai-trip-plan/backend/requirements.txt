@@ -1,13 +1,12 @@
-fastapi==0.136.3
-uvicorn[standard]==0.48.0
-pydantic-settings==2.14.1
-motor==3.7.1
-pymongo==4.17.0
-python-jose[cryptography]==3.5.0
-passlib[bcrypt]==1.7.4
-bcrypt==5.0.0
-httpx==0.28.1
-google-genai==2.6.0
-python-dotenv==1.2.2
-email-validator>=2.0.0
-python-multipart==0.0.6
+Django>=4.2,<5.0
+mongoengine>=0.29.3
+djangorestframework>=3.14
+djangorestframework-simplejwt>=5.5
+django-cors-headers>=4.0
+python-dotenv>=1.0
+django-filter>=24.0
+drf-yasg>=1.21
+PyJWT>=2.0
+
+# Optional email packages (for production)
+# django-anymail[mailgun]>=8.4

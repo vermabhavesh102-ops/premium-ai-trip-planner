@@ -4,8 +4,12 @@ import { apiFetch, clearToken } from '../lib/apiClient'
 type User = {
   id: string
   email: string
+  username: string
   full_name: string
-  created_at: string
+  role: string
+  is_email_verified: boolean
+  is_active: boolean
+  date_joined: string
 }
 
 type AuthContextValue = {
@@ -26,7 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshMe = useCallback(async () => {
     setLoading(true)
     try {
-      const me = await apiFetch<User>('/auth/me', { method: 'GET' })
+      const me = await apiFetch<User>('/api/auth/me', { method: 'GET' })
+
       setUser(me)
     } catch {
       setUser(null)

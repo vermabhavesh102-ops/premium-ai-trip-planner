@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { apiFetch } from '../lib/apiClient'
+import { createTripId, findSavedTrip, upsertSavedTrip } from '../lib/tripStorage'
 
 type TripResponse = {
   id?: string
+  itinerary_id?: string
   destination: string
   source: string
   duration_days: number
@@ -36,11 +39,18 @@ const comfortLevels = {
 export default function TripResults() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { tripId } = useParams()
   const [openDays, setOpenDays] = useState<Record<number, boolean>>({ 1: true })
+  const [remoteTrip, setRemoteTrip] = useState<TripResponse | null>(null)
 
   // Get trip from navigation state (from Workspace) or localStorage (from Planner)
   const state = location.state as { trip?: TripResponse } | null
   const trip = useMemo<TripResponse | null>(() => {
+    if (remoteTrip) return remoteTrip
+
+    const routeTrip = findSavedTrip<TripResponse>(tripId)
+    if (routeTrip) return routeTrip
+
     // First try to get from navigation state (when coming from Workspace)
     if (state?.trip) {
       return state.trip as TripResponse
@@ -53,13 +63,31 @@ export default function TripResults() {
     } catch {
       return null
     }
-  }, [state])
+  }, [remoteTrip, state, tripId])
+
+  useEffect(() => {
+    if (!tripId) return
+
+    let cancelled = false
+    apiFetch<TripResponse>(`/trips/workspace/itinerary/${tripId}`)
+      .then((data) => {
+        if (cancelled) return
+        const normalized = { ...data, id: data.itinerary_id ?? data.id }
+        setRemoteTrip(normalized)
+        upsertSavedTrip(normalized)
+      })
+      .catch(() => {
+        if (!cancelled) setRemoteTrip(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [tripId])
 
   const saveTrip = () => {
     if (!trip) return
-    const raw = localStorage.getItem('saved_trips')
-    const existing = raw ? (JSON.parse(raw) as TripResponse[]) : []
-    localStorage.setItem('saved_trips', JSON.stringify([{ ...trip, savedAt: new Date().toISOString() }, ...existing]))
+    upsertSavedTrip({ ...trip, id: trip.itinerary_id ?? trip.id ?? createTripId(), savedAt: new Date().toISOString() })
     navigate('/dashboard')
   }
 
@@ -242,8 +270,16 @@ export default function TripResults() {
 
         <section className="flex flex-wrap gap-2">
           <button onClick={saveTrip} className="premium-button">Save Trip</button>
-          <Link to="/planner" className="luxury-chip">Edit Itinerary</Link>
-          <Link to="/trip-results" className="luxury-chip">View Itinerary</Link>
+          <Link
+            to={trip.itinerary_id || trip.id ? `/planner/${trip.itinerary_id ?? trip.id}/edit` : '/planner'}
+            onClick={() => {
+              if (!trip.id) localStorage.setItem('planner_edit_trip', JSON.stringify(trip))
+            }}
+            className="luxury-chip"
+          >
+            Edit Itinerary
+          </Link>
+          <Link to={trip.itinerary_id || trip.id ? `/workspace/itinerary/${trip.itinerary_id ?? trip.id}` : '/trip-results'} className="luxury-chip">View Itinerary</Link>
           <Link to="/workspace" className="luxury-chip">Open Dashboard</Link>
         </section>
       </main>

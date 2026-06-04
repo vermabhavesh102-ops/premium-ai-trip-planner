@@ -56,7 +56,10 @@ function App() {
         />
 
         <Route path="/planner" element={<Planner />} />
+        <Route path="/planner/:tripId/edit" element={<Planner />} />
         <Route path="/trip-results" element={<TripResults />} />
+        <Route path="/trip-results/:tripId" element={<TripResults />} />
+        <Route path="/workspace/itinerary/:tripId" element={<TripResults />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

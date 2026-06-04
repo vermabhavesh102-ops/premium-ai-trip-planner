@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/apiClient'
+import { createTripId, findSavedTrip, upsertSavedTrip } from '../lib/tripStorage'
 import SearchDestination from '../components/SearchDestination'
 import type { Destination } from '../data/indianDestinations'
 import { indianDestinations } from '../data/indianDestinations'
-import { searchDestinations as searchGeoDestinations, type GeoResult } from '../lib/geoApi'
+import { searchDestinations, type GeoResult } from '../lib/geoApi'
+
 
 type Budget = 'economy' | 'mid' | 'luxury'
 type Suggestion = Destination
 type SearchResponse = { query: string; suggestions: Suggestion[] }
 type TripResponse = {
   id?: string
+  itinerary_id?: string
   destination: string
   source: string
   duration_days: number
@@ -122,6 +125,7 @@ function createLocalTrip({
 
 export default function Planner() {
   const navigate = useNavigate()
+  const { tripId } = useParams()
   const [searchParams] = useSearchParams()
   const [startSearch, setStartSearch] = useState('')
   const [startDestination, setStartDestination] = useState<Suggestion | null>(null)
@@ -146,10 +150,13 @@ export default function Planner() {
   const [editingTripId, setEditingTripId] = useState<string | null>(null)
 
   useEffect(() => {
-    const editDraft = localStorage.getItem('planner_edit_trip')
-    if (editDraft) {
+    const routeTrip = findSavedTrip<TripResponse>(tripId)
+    const editDraft = !routeTrip ? localStorage.getItem('planner_edit_trip') : null
+    if (routeTrip || editDraft) {
       try {
-        const trip = JSON.parse(editDraft) as TripResponse
+        //const trip = routeTrip ?? (JSON.parse(editDraft ?? '{}') as TripResponse)
+        const trip = JSON.parse(editDraft as string) as TripResponse
+
         setStartSearch(trip.planner_meta?.startLocation ?? '')
         setStartDestination(trip.planner_meta?.startDestination ?? null)
         setSearch(trip.destination ?? '')
@@ -166,7 +173,6 @@ export default function Planner() {
         setInterests(trip.planner_meta?.interests?.length ? trip.planner_meta.interests : ['Food', 'Culture'])
         setTransportPref(trip.planner_meta?.transportPref ?? transports[0])
         setHotelPref(trip.planner_meta?.hotelPref ?? hotels[0])
-        // Store the trip ID for updating
         setEditingTripId(trip.id ?? null)
       } catch {
         localStorage.removeItem('planner_edit_trip')
@@ -179,7 +185,7 @@ export default function Planner() {
     if (prefillDestination) {
       setSearch(prefillDestination)
     }
-  }, [searchParams])
+  }, [searchParams, tripId])
 
   // API search handler for the SearchDestination component using free Geo API
   const handleApiSearch = async (query: string): Promise<Destination[]> => {
@@ -188,7 +194,8 @@ export default function Planner() {
     setSearchLoading(true);
     try {
       // Use free OpenStreetMap Nominatim API for searching cities and states
-      const geoResults = await searchGeoDestinations(query, 15);
+      const geoResults = await searchDestinations(query, 15);
+
       
       // Convert GeoResult to Destination format
       return geoResults.map((geo: GeoResult) => ({
@@ -243,7 +250,7 @@ export default function Planner() {
 
       const generatedTrip = {
         ...res,
-        id: editingTripId || crypto.randomUUID(),
+        id: editingTripId || res.itinerary_id || createTripId(),
         savedAt: new Date().toISOString(),
         planner_meta: {
           transportPref,
@@ -256,34 +263,42 @@ export default function Planner() {
           budget,
         },
       }
-      localStorage.setItem('latest_trip', JSON.stringify(generatedTrip))
+      let tripToStore: TripResponse & { id: string; savedAt: string } = generatedTrip
+      try {
+        const persistedTrip = await apiFetch<TripResponse>(editingTripId ? `/trips/${editingTripId}/` : '/trips/', {
+          method: editingTripId ? 'PUT' : 'POST',
+          body: JSON.stringify(generatedTrip),
+        })
+        tripToStore = {
+          ...generatedTrip,
+          ...persistedTrip,
+          id: persistedTrip.itinerary_id ?? persistedTrip.id ?? generatedTrip.id,
+        }
+      } catch {
+        tripToStore = generatedTrip
+      }
 
-      const savedTrips = JSON.parse(localStorage.getItem('saved_trips') ?? '[]') as TripResponse[]
-      
+      localStorage.setItem('latest_trip', JSON.stringify(tripToStore))
+
       // Check if we're editing an existing trip
       if (editingTripId) {
-        // Update the existing trip instead of creating a new one
-        const updatedTrips = savedTrips.map((trip) =>
-          trip.id === editingTripId ? generatedTrip : trip
-        )
-        localStorage.setItem('saved_trips', JSON.stringify(updatedTrips))
+        upsertSavedTrip(tripToStore)
         setEditingTripId(null)
         
         // Navigate with edit success toast
         navigate('/workspace', {
           state: {
             workspaceToast: true,
-            destination: generatedTrip.destination,
+            destination: tripToStore.destination,
             isEdit: true,
           },
         })
       } else {
-        // Create new trip
-        localStorage.setItem('saved_trips', JSON.stringify([generatedTrip, ...savedTrips]))
+        upsertSavedTrip(tripToStore)
         navigate('/workspace', {
           state: {
             workspaceToast: true,
-            destination: generatedTrip.destination,
+            destination: tripToStore.destination,
             isEdit: false,
           },
         })
