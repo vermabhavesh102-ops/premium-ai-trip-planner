@@ -10,7 +10,9 @@ class SignupSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         if User.objects(email=value).first():
-            raise serializers.ValidationError('Email already in use')
+            raise serializers.ValidationError(
+                'This email is already registered. Please log in or use a different email.'
+            )
         return value
 
     def validate_username(self, value):

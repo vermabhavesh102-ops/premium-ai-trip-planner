@@ -1,4 +1,4 @@
-Django>=4.2,<5.0
+ Django>=4.2,<5.0
 mongoengine>=0.29.3
 djangorestframework>=3.14
 djangorestframework-simplejwt>=5.5
@@ -7,6 +7,7 @@ python-dotenv>=1.0
 django-filter>=24.0
 drf-yasg>=1.21
 PyJWT>=2.0
-
+bcrypt>=4.0
+ 
 # Optional email packages (for production)
 # django-anymail[mailgun]>=8.4
