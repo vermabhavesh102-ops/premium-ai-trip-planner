@@ -14,7 +14,6 @@ def mongo_users(request):
             '<tr>'
             f'<td>{escape(str(user.id))}</td>'
             f'<td>{escape(user.email)}</td>'
-            f'<td>{escape(user.username)}</td>'
             f'<td>{escape(user.role)}</td>'
             f'<td>{escape(str(user.is_active))}</td>'
             f'<td>{escape(str(user.last_login or ""))}</td>'
@@ -37,7 +36,7 @@ def mongo_users(request):
             <p><a href="/admin/">Back to admin</a></p>
             <h1>MongoDB Users</h1>
             <table>
-              <thead><tr><th>ID</th><th>Email</th><th>Username</th><th>Role</th><th>Active</th><th>Last Login</th><th>Last Active</th></tr></thead>
+              <thead><tr><th>ID</th><th>Email</th><th>Role</th><th>Active</th><th>Last Login</th><th>Last Active</th></tr></thead>
               <tbody>{''.join(rows)}</tbody>
             </table>
           </body>

@@ -6,8 +6,7 @@ from mongoengine import DictField, Document, EmailField, StringField, BooleanFie
 class User(Document):
     ROLES = ('user', 'admin')
     email = EmailField(required=True, unique=True)
-    username = StringField(required=True, unique=True)
-    full_name = StringField(default='')
+
     profile_image = StringField(default='')
     password = StringField(required=True)
     role = StringField(choices=ROLES, default='user')
@@ -28,8 +27,9 @@ class User(Document):
 
     meta = {
         'collection': 'users',
-        'indexes': ['email', 'username', 'last_login', 'last_active'],
+        'indexes': ['email', 'last_login', 'last_active'],
     }
+
 
     def __str__(self):
         return self.email
@@ -47,7 +47,8 @@ class User(Document):
         return False
 
     def get_username(self):
-        return self.email or self.username
+        return self.email
+
 
     def get_email_field_name(self):
         return 'email'
@@ -62,10 +63,12 @@ class User(Document):
         return check_password(raw_password, self.password)
 
     def get_full_name(self):
-        return self.full_name or self.username
+        return self.email
 
     def get_short_name(self):
-        return self.username
+        return self.email
+
+
 
 
 class PasswordOtpLog(Document):

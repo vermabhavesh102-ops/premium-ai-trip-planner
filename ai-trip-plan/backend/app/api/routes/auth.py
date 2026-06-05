@@ -15,7 +15,6 @@ async def signup(payload: UserCreate):
     return UserPublic(
         id=user.id,
         email=user.email,
-        full_name=user.full_name,
         created_at=user.created_at,
     )
 
@@ -32,6 +31,5 @@ async def me(current_user: UserInDB = Depends(auth_service.get_current_user)):
     return UserPublic(
         id=current_user.id,
         email=current_user.email,
-        full_name=current_user.full_name,
         created_at=current_user.created_at,
     )

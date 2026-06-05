@@ -155,6 +155,7 @@ def validate_new_password(password, user):
     return []
 
 
+
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def signup(request):
@@ -554,12 +555,16 @@ def password_reset_confirm(request):
 @permission_classes([permissions.AllowAny])
 def login_view(request):
     try:
-        email = request.data.get('email') or request.data.get('username') or request.POST.get('email') or request.POST.get('username')
+        email = request.data.get('email') or request.POST.get('email')
+
         password = request.data.get('password') or request.POST.get('password')
         if email is None or password is None:
             return Response({'detail': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = authenticate(request, username=email, password=password)
+
+
+
+        user = authenticate(request, email=email, password=password)
         if user is None:
             logger.warning('Login failed invalid credentials email=%s', email)
             return Response({'detail': 'Invalid email or password.'}, status=status.HTTP_401_UNAUTHORIZED)

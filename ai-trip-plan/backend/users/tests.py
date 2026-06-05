@@ -12,14 +12,13 @@ class AuthTests(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.email = f'auth-{uuid.uuid4().hex}@example.com'
-        self.username = f'auth-{uuid.uuid4().hex[:10]}'
 
     def tearDown(self):
         User.objects(email=self.email).delete()
         PasswordOtpLog.objects(email=self.email).delete()
 
     def test_signup_and_me(self):
-        resp = self.client.post(reverse('signup'), {'email': self.email, 'username': self.username, 'password': 'pass123'})
+        resp = self.client.post(reverse('signup'), {'email': self.email, 'password': 'pass123', 'confirm_password': 'pass123'})
         self.assertEqual(resp.status_code, 201)
         token = resp.data.get('access_token')
         self.assertTrue(token)
@@ -32,7 +31,7 @@ class AuthTests(TestCase):
 class ProfileApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User(email='profile@example.com', username='profile-user', full_name='Profile User')
+        self.user = User(email='profile@example.com')
         self.user.set_password('OldPassword!123')
         self.user.save()
         self.client.force_authenticate(user=self.user)
@@ -54,13 +53,14 @@ class ProfileApiTests(TestCase):
 
         response = self.client.patch(
             reverse('profile'),
-            {'full_name': 'Updated User', 'username': 'updated-user', 'email': 'changed@example.com'},
+            {'email': 'changed@example.com'},
             format='json',
         )
         self.assertEqual(response.status_code, 200)
         self.user.reload()
         self.assertEqual(self.user.email, 'profile@example.com')
-        self.assertEqual(self.user.username, 'updated-user')
+        self.assertNotIn('username', self.user.to_mongo())
+        self.assertNotIn('full_name', self.user.to_mongo())
 
     @patch('users.views.send_otp_email', return_value='<test-message@example.com>')
     @patch('users.views.secrets.randbelow', return_value=123456)
@@ -90,7 +90,7 @@ class ForgotPasswordOtpTests(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.email = f'forgot-{uuid.uuid4().hex}@example.com'
-        self.user = User(email=self.email, username=f'forgot-{uuid.uuid4().hex[:10]}', full_name='Forgot User')
+        self.user = User(email=self.email)
         self.user.set_password('OldPassword!123')
         self.user.save()
 
