@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/apiClient'
-import { createTripId, findSavedTrip, upsertSavedTrip } from '../lib/tripStorage'
+import { createTripId, findSavedTrip } from '../lib/tripStorage'
+
 import SearchDestination from '../components/SearchDestination'
 import type { Destination } from '../data/indianDestinations'
 import { indianDestinations } from '../data/indianDestinations'
@@ -280,12 +281,10 @@ export default function Planner() {
 
       localStorage.setItem('latest_trip', JSON.stringify(tripToStore))
 
-      // Check if we're editing an existing trip
+      // Trip generation/edit affects Planner data only.
+      // Wish List is updated ONLY when user clicks "Add to Wish List".
       if (editingTripId) {
-        upsertSavedTrip(tripToStore)
         setEditingTripId(null)
-        
-        // Navigate with edit success toast
         navigate('/workspace', {
           state: {
             workspaceToast: true,
@@ -294,7 +293,6 @@ export default function Planner() {
           },
         })
       } else {
-        upsertSavedTrip(tripToStore)
         navigate('/workspace', {
           state: {
             workspaceToast: true,
@@ -303,6 +301,7 @@ export default function Planner() {
           },
         })
       }
+
     } finally {
       setLoading(false)
     }

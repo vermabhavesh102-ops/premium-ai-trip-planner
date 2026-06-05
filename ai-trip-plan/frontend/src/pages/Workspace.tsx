@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { readSavedTrips } from '../lib/tripStorage'
+import { apiFetch } from '../lib/apiClient'
+import { upsertSavedTrip } from '../lib/tripStorage'
 
 type SavedTrip = {
   id?: string
@@ -37,7 +38,9 @@ const formatDate = (value?: string) => {
 export default function Workspace() {
   const location = useLocation()
   const navigate = useNavigate()
-  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>(readSavedTrips)
+  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([])
+
+  const [loadError, setLoadError] = useState('')
   const state = location.state as { workspaceToast?: boolean; destination?: string; isEdit?: boolean } | null
   const [toast, setToast] = useState<ToastState | null>(
     state?.workspaceToast
@@ -49,19 +52,53 @@ export default function Workspace() {
           }
         : {
             type: 'add',
-            title: 'Added to workspace!',
+            title: 'Added to Wish List!',
             detail: state.destination ? `${state.destination} was saved successfully.` : undefined,
           }
       : null,
   )
 
-  const deleteTrip = (tripToDelete: SavedTrip) => {
+  useEffect(() => {
+    let cancelled = false
+
+    apiFetch<SavedTrip[]>('/trips/')
+      .then((trips) => {
+        if (cancelled) return
+        const normalized = trips.map((trip) => ({
+          ...trip,
+          id: trip.itinerary_id ?? trip.id,
+          savedAt: trip.savedAt ?? (trip as SavedTrip & { saved_at?: string }).saved_at,
+        }))
+        normalized.forEach((trip) => upsertSavedTrip(trip))
+        setSavedTrips(normalized)
+        setLoadError('')
+      })
+      .catch((error: Error) => {
+        if (!cancelled) setLoadError(error.message)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const deleteTrip = async (tripToDelete: SavedTrip) => {
+    const itineraryId = tripToDelete.itinerary_id ?? tripToDelete.id
+    if (itineraryId) {
+      try {
+        await apiFetch(`/trips/${itineraryId}/`, { method: 'DELETE' })
+      } catch (error) {
+        setLoadError(error instanceof Error ? error.message : 'Could not delete this trip.')
+        return
+      }
+    }
+
     const nextTrips = savedTrips.filter((trip) => trip.id !== tripToDelete.id)
     setSavedTrips(nextTrips)
     localStorage.setItem('saved_trips', JSON.stringify(nextTrips))
     setToast({
       type: 'delete',
-      title: 'Deleted from workspace!',
+      title: 'Deleted from Wish List!',
       detail: tripToDelete.destination ? `${tripToDelete.destination} was removed.` : undefined,
     })
   }
@@ -124,7 +161,7 @@ export default function Workspace() {
         <section className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.45em] text-slate-500">
-              Workspace
+              Wish List
             </p>
             <h1 className="mt-2 font-['Playfair_Display'] text-4xl font-bold leading-none tracking-normal sm:text-5xl">
               Your saved journeys
@@ -140,8 +177,17 @@ export default function Workspace() {
           
         </section>
 
-        {savedTrips.length === 0 ? (
+      {loadError ? (
+        <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+          MongoDB trips could not be refreshed: {loadError}. Showing locally cached trips.
+        </p>
+      ) : null}
+
+      {/* Avoid empty-state flicker: only show when API confirmed 0 + no local error state. */}
+      {savedTrips.length === 0 && !loadError ? (
+
           <section className="mt-10 flex min-h-60 items-center justify-center rounded-lg border-2 border-dashed border-[#e2ddd5] px-6 py-16 text-center dark:border-slate-800">
+
             <div>
               <h2 className="font-['Playfair_Display'] text-2xl font-bold tracking-normal">
                 No trips yet
@@ -237,7 +283,7 @@ export default function Workspace() {
                     state={{ trip }}
                     className="text-sm font-medium text-slate-600 transition hover:text-[#9a7650] dark:text-slate-300"
                   >
-                    AI Travel Guide
+                    Open in AI Travel Guide
                   </Link>
                 </div>
               </article>

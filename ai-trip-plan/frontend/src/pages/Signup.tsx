@@ -3,8 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { apiFetch, storeToken } from '../lib/apiClient'
 import { useAuth } from '../context/AuthContext'
+import PasswordInput from '../components/PasswordInput'
+
+
 
 type TokenResponse = { access_token: string }
+
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -12,7 +16,7 @@ export default function Signup() {
   const [full_name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [username, setUsername] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -23,17 +27,18 @@ export default function Signup() {
     try {
       await apiFetch('/api/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ full_name, email, username, password }),
+        body: JSON.stringify({ full_name, email, password }),
       })
+
       const token = await apiFetch<TokenResponse>('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       })
+
       storeToken(token.access_token)
       login(token.access_token)
       navigate('/planner')
     } catch (e: any) {
-      // Extract detailed error message
       const errorMessage = typeof e === 'string'
         ? e
         : e?.message || e?.detail || JSON.stringify(e) || 'Signup failed'
@@ -43,5 +48,42 @@ export default function Signup() {
     }
   }
 
-  return <div className="min-h-screen premium-bg flex items-center justify-center p-4"><motion.form initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} onSubmit={onSubmit} className="glass-card w-full max-w-md p-6 space-y-4"><h1 className="text-3xl font-black">Create account</h1><input className="glass-panel w-full px-4 py-3" placeholder="Name" value={full_name} onChange={(e)=>setName(e.target.value)} /><input className="glass-panel w-full px-4 py-3" placeholder="Username" value={username} onChange={(e)=>setUsername(e.target.value)} /><input className="glass-panel w-full px-4 py-3" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} /><input type="password" className="glass-panel w-full px-4 py-3" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} />{error && <div className="text-sm text-red-500">{error}</div>}<button className="premium-button w-full">{loading ? 'Creating...' : 'Sign up'}</button><p className="text-sm">Already have an account? <Link to="/login" className="font-bold">Login</Link></p></motion.form></div>
+  return (
+    <div className="min-h-screen premium-bg flex items-center justify-center p-4">
+      <motion.form
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        onSubmit={onSubmit}
+        className="glass-card w-full max-w-md p-6 space-y-4"
+      >
+        <h1 className="text-3xl font-black">Create account</h1>
+        <input
+          className="glass-panel w-full px-4 py-3"
+          placeholder="Name"
+          value={full_name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          className="glass-panel w-full px-4 py-3"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <PasswordInput
+          className="w-full"
+          placeholder="Password"
+          value={password}
+          onChange={setPassword}
+          inputClassName="w-full rounded-2xl border border-slate-300 bg-transparent px-4 py-3 pr-12 outline-none focus:border-[#c7a575] dark:border-slate-700"
+        />
+
+        {error && <div className="text-sm text-red-500">{error}</div>}
+        <button className="premium-button w-full">{loading ? 'Creating...' : 'Sign up'}</button>
+        <p className="text-sm">
+          Already have an account? <Link to="/login" className="font-bold">Login</Link>
+        </p>
+      </motion.form>
+    </div>
+  )
 }
+

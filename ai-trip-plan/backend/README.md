@@ -27,12 +27,25 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
+5. Run the FastAPI AI Travel Guide service on a separate port:
+
+```bash
+uvicorn app.main:app --reload --port 8001
+```
+
+The frontend sends the complete selected MongoDB trip to
+`POST http://localhost:8001/api/ai/travel-plan`. Set `VITE_FASTAPI_BASE_URL`
+when the FastAPI service is hosted elsewhere.
+
 API endpoints (base `/api`):
 - `POST /api/auth/signup` — create user
 - `POST /api/auth/login` — obtain JWT (form-encoded username/password)
 - `GET /api/auth/me` — current user
 - `POST /api/trips/generate` — generate trip mock
 - `GET/POST/PUT/DELETE /api/trips/` — CRUD saved trips
+
+FastAPI:
+- `POST :8001/api/ai/travel-plan` - generate a personalized guide from a complete saved trip
 
 Extras:
 - `POST /api/trips/upload` — upload file (returns `url`)

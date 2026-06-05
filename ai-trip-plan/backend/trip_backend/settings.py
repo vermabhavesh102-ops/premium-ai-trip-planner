@@ -38,6 +38,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.middleware.RequestLoggingMiddleware',
+    'core.clickjacking.ClickjackingHeaderBypassMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -107,7 +108,9 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': int(os.getenv('PAGE_SIZE', '10')),
+    'EXCEPTION_HANDLER': 'trip_backend.error_handlers.drf_exception_handler',
 }
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_MINUTES', '60'))),
@@ -117,12 +120,49 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL', '1') == '1'
 
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+
+# Gmail-compatible defaults (can be overridden via env vars)
+# - Use STARTTLS on port 587
+# - Use SSL on port 465 if you set EMAIL_USE_TLS=1 and EMAIL_PORT=465
+# Note: actual behavior is determined by the Django EMAIL_USE_TLS / EMAIL_PORT values.
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '20'))
+
+
+# If you use SMTP, ensure these env vars are set: EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD.
+# Optional: EMAIL_USE_TLS=1 for TLS.
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+
+
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '25') or 25)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', '0') == '1'
+
+# Gmail deliverability / SMTP safety checks
+# Recommended for Gmail: host=smtp.gmail.com, port=587, EMAIL_USE_TLS=1
+EMAIL_FROM_DEFAULT = os.getenv('EMAIL_FROM_DEFAULT', '') or EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = EMAIL_FROM_DEFAULT or 'TripZen AI <noreply@example.com>'
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Auto-detect SSL vs TLS expectation (supports Gmail 587/STARTTLS and 465/SSL)
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', '0') == '1'
+
+EMAIL_HOST_SECURE_PORT_HINT = int(os.getenv('EMAIL_HOST_SECURE_PORT_HINT', '587'))
+
+# Fail-fast in production-like runs when OTP/email is configured but SMTP creds are incomplete.
+# (Keep DEBUG=1 tolerant.)
+_EMAIL_SMTP_CONFIGURED = bool(EMAIL_HOST and EMAIL_HOST_USER and EMAIL_HOST_PASSWORD)
+
+
+if _EMAIL_SMTP_CONFIGURED and (not EMAIL_PORT or not EMAIL_FROM_DEFAULT):
+
+    if not DEBUG:
+        raise RuntimeError(
+            'SMTP email is configured but EMAIL_PORT or EMAIL_FROM_DEFAULT is missing.'
+
+        )
+
 
 LOGGING = {
     'version': 1,
@@ -134,7 +174,21 @@ LOGGING = {
         'handlers': ['console'],
         'level': os.getenv('LOG_LEVEL', 'INFO'),
     },
+    'loggers': {
+        # Ensure both `logger = logging.getLogger(__name__)` and `getLogger('users')` paths show up
+        'users': {
+            'handlers': ['console'],
+            'level': os.getenv('LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+        'backend.users': {
+            'handlers': ['console'],
+            'level': os.getenv('LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
 }
+
 
 # MongoDB Configuration
 # Security: Never hardcode credentials. Use environment variables or separate components.
@@ -225,6 +279,8 @@ except Exception as e:
     else:
         raise
 
+
 # Expose settings for use in other modules
 MONGO_DB_NAME = _MONGO_DB_NAME
+
 
