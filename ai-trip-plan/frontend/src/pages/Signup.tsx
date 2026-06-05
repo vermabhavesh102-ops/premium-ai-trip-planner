@@ -13,7 +13,7 @@ type TokenResponse = { access_token: string }
 export default function Signup() {
   const navigate = useNavigate()
   const { login } = useAuth()
-  const [full_name, setName] = useState('')
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -33,11 +33,11 @@ export default function Signup() {
       }
       await apiFetch('/api/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ full_name, email, password, confirm_password: confirmPassword }),
+        body: JSON.stringify({ full_name: fullName.trim(), email: email.trim().toLowerCase(), password, confirm_password: confirmPassword }),
       })
 
 
-
+      // Immediately attempt login to get the access token
       const token = await apiFetch<TokenResponse>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
@@ -67,9 +67,9 @@ export default function Signup() {
         <h1 className="text-3xl font-black">Create account</h1>
         <input
           className="glass-panel w-full px-4 py-3"
-          placeholder="Name"
-          value={full_name}
-          onChange={(e) => setName(e.target.value)}
+          placeholder="Full Name"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
         />
         <input
           className="glass-panel w-full px-4 py-3"
@@ -102,4 +102,3 @@ export default function Signup() {
     </div>
   )
 }
-

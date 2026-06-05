@@ -4,7 +4,6 @@ import { apiFetch, clearToken } from '../lib/apiClient'
 type User = {
   id: string
   email: string
-  username: string
   full_name: string
   profile_image?: string
   role: string

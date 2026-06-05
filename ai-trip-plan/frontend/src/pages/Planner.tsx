@@ -214,7 +214,7 @@ export default function Planner() {
         region: geo.region,
         country: geo.country,
         parentState: geo.parentState,
-        hero_image: `https://source.unsplash.com/1200x800/?${encodeURIComponent(geo.name)}`,
+        hero_image: `https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80&sig=${encodeURIComponent(geo.name)}`,
         overview: `${geo.name} is a ${geo.type} in ${geo.country}.`,
       }));
     } catch (error) {

@@ -7,7 +7,6 @@ export type ProfileStats = {
 export type UserProfile = {
   id: string
   email: string
-  username: string
   full_name: string
   profile_image?: string
   role: string
@@ -20,11 +19,7 @@ export type UserProfile = {
   stats: ProfileStats
 }
 
-export const getInitials = (fullName?: string, username?: string) => {
-  const value = fullName?.trim() || username?.trim() || 'Traveler'
-  return value
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('')
+export const getInitials = (fullName?: string) => {
+  const char = fullName?.trim()?.charAt(0) || 'U'
+  return char.toUpperCase()
 }

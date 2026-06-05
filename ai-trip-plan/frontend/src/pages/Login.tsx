@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { apiFetch, storeToken } from '../lib/apiClient'
@@ -39,17 +39,16 @@ export default function Login() {
 
   const strength = useMemo(() => passwordChecks(newPassword).filter(Boolean).length, [newPassword])
 
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const id = window.setInterval(() => {
+      setCooldown((v) => (v <= 1 ? 0 : v - 1))
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [cooldown > 0])
+
   const startCooldown = () => {
     setCooldown(60)
-    const id = window.setInterval(() => {
-      setCooldown((value) => {
-        if (value <= 1) {
-          window.clearInterval(id)
-          return 0
-        }
-        return value - 1
-      })
-    }, 1000)
   }
 
   const onSubmit = async (e: FormEvent) => {

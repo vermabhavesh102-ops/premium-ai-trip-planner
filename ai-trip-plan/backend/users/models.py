@@ -6,7 +6,7 @@ from mongoengine import DictField, Document, EmailField, StringField, BooleanFie
 class User(Document):
     ROLES = ('user', 'admin')
     email = EmailField(required=True, unique=True)
-
+    full_name = StringField(default='')
     profile_image = StringField(default='')
     password = StringField(required=True)
     role = StringField(choices=ROLES, default='user')

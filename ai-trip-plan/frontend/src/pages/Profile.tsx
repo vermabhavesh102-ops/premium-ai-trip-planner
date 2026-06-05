@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../lib/apiClient'
 import type { UserProfile } from '../lib/profile'
@@ -21,7 +21,7 @@ const passwordChecks = (password: string) => [
 ]
 
 export default function Profile() {
-  const { refreshMe, logout } = useAuth()
+  const { user: authUser, refreshMe, logout } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,20 +42,26 @@ export default function Profile() {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState('')
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     setLoading(true)
     try {
-      setProfile(await apiFetch<UserProfile>('/api/auth/profile'))
+      const data = await apiFetch<UserProfile>('/api/auth/profile')
+      setProfile(data)
+      // Sync global auth state with database data to ensure Navbar and Avatar stay updated
+      if (data.full_name !== authUser?.full_name || data.profile_image !== authUser?.profile_image) {
+        await refreshMe()
+      }
     } catch (error) {
       setToast({ tone: 'error', message: error instanceof Error ? error.message : 'Could not load profile.' })
     } finally {
       setLoading(false)
     }
-  }
+    // Removed authUser?.full_name from deps to prevent infinite loops
+  }, [refreshMe])
 
   useEffect(() => {
     loadProfile()
-  }, [])
+  }, [loadProfile])
 
   useEffect(() => {
     if (!toast) return
@@ -74,7 +80,7 @@ export default function Profile() {
 
   const openEdit = () => {
     if (!profile) return
-    setFullName(profile.full_name)
+    setFullName(profile.full_name || authUser?.full_name || '')
 
     setImageFile(null)
 
@@ -88,16 +94,20 @@ export default function Profile() {
     try {
       let updated = await apiFetch<UserProfile>('/api/auth/profile', {
         method: 'PATCH',
-        body: JSON.stringify({ full_name: fullName }),
-
+        body: JSON.stringify({ full_name: fullName.trim() }), // Ensure payload matches backend expectation
       })
+
       if (imageFile) {
         const formData = new FormData()
         formData.append('image', imageFile)
         updated = await apiFetch<UserProfile>('/api/auth/profile/image', { method: 'POST', body: formData })
       }
-      setProfile(updated)
+      
+      // Force a refresh of the global authentication context to update the Navbar and global Avatar immediately
       await refreshMe()
+      // Ensure we use the freshly returned data from refreshMe to keep Navbar and Profile in sync
+      setProfile(updated)
+      
       setEditOpen(false)
       setToast({ tone: 'success', message: 'Profile updated successfully.' })
     } catch (error) {
@@ -207,11 +217,11 @@ export default function Profile() {
         <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
-              <ProfileAvatar image={profile.profile_image} fullName={profile.full_name} className="h-28 w-28 text-4xl" />
+              <ProfileAvatar image={profile.profile_image} fullName={profile.full_name || authUser?.full_name || 'Traveler'} className="h-28 w-28 text-4xl" />
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.28em] text-[#9a7650]">Your Profile</p>
-                <h1 className="mt-2 font-['Playfair_Display'] text-4xl font-bold">{profile.full_name || profile.email}</h1>
-                <p className="mt-2 text-slate-500 dark:text-slate-400">Signed in to TripZen AI</p>
+                <h1 className="mt-2 font-['Playfair_Display'] text-4xl font-bold capitalize">{profile.full_name || authUser?.full_name || 'Traveler'}</h1>
+                <p className="mt-2 text-slate-500 dark:text-slate-400">Signed in as {profile.email}</p>
               </div>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
@@ -234,7 +244,7 @@ export default function Profile() {
           <h2 className="font-['Playfair_Display'] text-2xl font-bold">Account Information</h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             {[
-              ['Full Name', profile.full_name || 'Not set'],
+              ['Full Name', profile.full_name || authUser?.full_name || 'Not set'],
               ['Email Address', profile.email],
             ].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-[#faf7f2] p-5 dark:bg-slate-950">
