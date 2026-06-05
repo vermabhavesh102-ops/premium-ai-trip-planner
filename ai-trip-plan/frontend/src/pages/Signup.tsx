@@ -16,6 +16,8 @@ export default function Signup() {
   const [full_name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -25,10 +27,16 @@ export default function Signup() {
     setLoading(true)
     setError('')
     try {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match')
+        return
+      }
       await apiFetch('/api/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ full_name, email, password }),
+        body: JSON.stringify({ full_name, email, password, confirm_password: confirmPassword }),
       })
+
+
 
       const token = await apiFetch<TokenResponse>('/api/auth/login', {
         method: 'POST',
@@ -76,6 +84,14 @@ export default function Signup() {
           onChange={setPassword}
           inputClassName="w-full rounded-2xl border border-slate-300 bg-transparent px-4 py-3 pr-12 outline-none focus:border-[#c7a575] dark:border-slate-700"
         />
+        <PasswordInput
+          className="w-full"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          inputClassName="w-full rounded-2xl border border-slate-300 bg-transparent px-4 py-3 pr-12 outline-none focus:border-[#c7a575] dark:border-slate-700"
+        />
+
 
         {error && <div className="text-sm text-red-500">{error}</div>}
         <button className="premium-button w-full">{loading ? 'Creating...' : 'Sign up'}</button>
