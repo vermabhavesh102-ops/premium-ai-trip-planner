@@ -98,7 +98,6 @@ export default function Header() {
                 <ProfileAvatar
                   image={profile?.profile_image ?? user.profile_image}
                   fullName={profile?.full_name ?? user.full_name}
-                  username={profile?.username ?? user.username}
                   className="h-11 w-11 text-sm"
                 />
               </button>
@@ -109,11 +108,10 @@ export default function Header() {
                     <ProfileAvatar
                       image={profile?.profile_image ?? user.profile_image}
                       fullName={profile?.full_name ?? user.full_name}
-                      username={profile?.username ?? user.username}
                       className="h-16 w-16 text-xl"
                     />
                     <div className="min-w-0">
-                      <p className="truncate text-xl font-black">{profile?.full_name || user.full_name || user.username}</p>
+                      <p className="truncate text-xl font-black">{profile?.full_name || user.full_name || 'Traveler'}</p>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         {profileLoading ? 'Refreshing profile...' : 'Signed in'}
                       </p>
