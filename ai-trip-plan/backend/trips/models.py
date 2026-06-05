@@ -76,7 +76,35 @@ class Workspace(Document):
         return super().save(*args, **kwargs)
 
 
+class WishListItem(Document):
+    owner_id = StringField(required=True)
+    owner_email = EmailField()
+    itinerary_id = StringField(required=True)
+    added_at = DateTimeField(default=utcnow)
+    # Optional snapshot fields for UI without joining the Trip document.
+    destination = StringField()
+    planner_meta = DictField(default=dict)
+
+    meta = {
+        'collection': 'wishlist_items',
+        'indexes': [
+            'owner_id',
+            'owner_email',
+            'itinerary_id',
+            {'fields': ['owner_id', 'itinerary_id'], 'unique': True},
+            {'fields': ['owner_id', '-added_at']},
+        ],
+        'ordering': ['-added_at'],
+    }
+
+    def save(self, *args, **kwargs):
+        if not self.added_at:
+            self.added_at = utcnow()
+        return super().save(*args, **kwargs)
+
+
 class Booking(Document):
+
     booking_id = StringField(required=True, unique=True, default=lambda: str(uuid.uuid4()))
     owner_id = StringField(required=True)
     itinerary_id = StringField(required=True)

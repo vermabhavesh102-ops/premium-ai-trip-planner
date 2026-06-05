@@ -6,6 +6,7 @@ type User = {
   email: string
   username: string
   full_name: string
+  profile_image?: string
   role: string
   is_email_verified: boolean
   is_active: boolean

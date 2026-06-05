@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../lib/apiClient'
-import { createTripId, findSavedTrip, upsertSavedTrip } from '../lib/tripStorage'
-import { CalendarDays, MapPin, Moon } from 'lucide-react'
-import { addDaysToDateInput, formatTripDate, getInclusiveDayCount } from '../lib/tripDates'
+import { createTripId, findSavedTrip, readSavedTrips, upsertSavedTrip } from '../lib/tripStorage'
+import { generateTravelGuide } from '../lib/travelGuideApi'
 
 type TripResponse = {
   id?: string
@@ -19,7 +18,16 @@ type TripResponse = {
   nearby_places: Array<{ name: string; category: string; rating?: number }>
   restaurants: Array<{ name: string; category: string; rating?: number; address?: string }>
   transport: Array<{ title: string; detail: string }>
-  planner_meta?: { transportPref?: string; hotelPref?: string; budget?: string; interests?: string[]; startDate?: string; endDate?: string; destination?: { name?: string; region?: string; country?: string } }
+  budget_recommendations?: {
+    currency?: string
+    budget_style?: string
+    daily_range?: { min: number; max: number }
+    trip_total_range?: { min: number; max: number }
+    per_person_range?: { min: number; max: number }
+    allocation?: Record<string, string>
+  }
+  travel_tips?: string[]
+  planner_meta?: { transportPref?: string; hotelPref?: string; budget?: string; interests?: string[]; destination?: { name?: string; region?: string; country?: string } }
   savedAt?: string
 }
 
@@ -44,19 +52,27 @@ export default function TripResults() {
   const { tripId } = useParams()
   const [openDays, setOpenDays] = useState<Record<number, boolean>>({ 1: true })
   const [remoteTrip, setRemoteTrip] = useState<TripResponse | null>(null)
+  const [savedTrips, setSavedTrips] = useState<TripResponse[]>(readSavedTrips)
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(tripId ?? null)
+  const [loadingTrips, setLoadingTrips] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [guideError, setGuideError] = useState('')
 
   // Get trip from navigation state (from Workspace) or localStorage (from Planner)
   const state = location.state as { trip?: TripResponse } | null
+  const tripKey = (savedTrip: TripResponse) => savedTrip.itinerary_id ?? savedTrip.id ?? savedTrip.destination
+  const selectedSavedTrip = useMemo(
+    () =>
+      savedTrips.find((savedTrip) => tripKey(savedTrip) === selectedTripId) ??
+      state?.trip ??
+      findSavedTrip<TripResponse>(tripId),
+    [savedTrips, selectedTripId, state, tripId],
+  )
   const trip = useMemo<TripResponse | null>(() => {
     if (remoteTrip) return remoteTrip
 
-    const routeTrip = findSavedTrip<TripResponse>(tripId)
-    if (routeTrip) return routeTrip
+    if (selectedSavedTrip) return selectedSavedTrip
 
-    // First try to get from navigation state (when coming from Workspace)
-    if (state?.trip) {
-      return state.trip as TripResponse
-    }
     // Fallback to localStorage (when coming from Planner)
     const raw = localStorage.getItem('latest_trip')
     if (!raw) return null
@@ -65,7 +81,33 @@ export default function TripResults() {
     } catch {
       return null
     }
-  }, [remoteTrip, state, tripId])
+  }, [remoteTrip, selectedSavedTrip])
+
+  useEffect(() => {
+    let cancelled = false
+
+    apiFetch<TripResponse[]>('/trips/')
+      .then((trips) => {
+        if (cancelled) return
+        const normalized = trips.map((savedTrip) => ({
+          ...savedTrip,
+          id: savedTrip.itinerary_id ?? savedTrip.id,
+        }))
+        normalized.forEach((savedTrip) => upsertSavedTrip(savedTrip))
+        setSavedTrips(normalized)
+        if (!selectedTripId && normalized[0]) setSelectedTripId(tripKey(normalized[0]))
+      })
+      .catch((error: Error) => {
+        if (!cancelled) setGuideError(`MongoDB Wish List could not be refreshed: ${error.message}`)
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTrips(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!tripId) return
@@ -87,6 +129,23 @@ export default function TripResults() {
     }
   }, [tripId])
 
+  const askAi = async () => {
+    if (!selectedSavedTrip) return
+
+    setGenerating(true)
+    setGuideError('')
+    try {
+      const generated = await generateTravelGuide<TripResponse>(selectedSavedTrip)
+      setRemoteTrip(generated)
+      localStorage.setItem('latest_trip', JSON.stringify(generated))
+      setOpenDays({ 1: true })
+    } catch (error) {
+      setGuideError(error instanceof Error ? error.message : 'The AI travel guide could not be generated.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const saveTrip = () => {
     if (!trip) return
     upsertSavedTrip({ ...trip, id: trip.itinerary_id ?? trip.id ?? createTripId(), savedAt: new Date().toISOString() })
@@ -95,12 +154,39 @@ export default function TripResults() {
 
   if (!trip) {
     return (
-      <div className="min-h-screen premium-bg text-slate-900 dark:text-white flex items-center justify-center p-4">
-        <div className="glass-card p-8 max-w-lg text-center space-y-3">
-          <div className="text-2xl font-black">No itinerary generated yet</div>
-          <div className="text-sm text-slate-600 dark:text-slate-300">Go back to planner to generate your AI trip.</div>
-          <Link to="/planner" className="premium-button">Back to Planner</Link>
-        </div>
+      <div className="min-h-screen premium-bg p-4 text-slate-900 dark:text-white">
+        <section className="glass-card mx-auto mt-6 max-w-6xl p-6">
+          <h1 className="text-3xl font-black">AI Travel Guide</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            Choose a saved trip from your Wish List. The complete trip will be sent to FastAPI when you click Ask AI.
+          </p>
+          {loadingTrips ? (
+            <p className="mt-6 text-sm font-bold text-slate-500">Loading Wish List trips...</p>
+          ) : savedTrips.length ? (
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {savedTrips.map((savedTrip) => {
+                const key = tripKey(savedTrip)
+                return (
+                  <button
+                    type="button"
+                    key={key}
+                    onClick={() => setSelectedTripId(key)}
+                    className="rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:border-[#c7a575] dark:border-slate-700 dark:bg-slate-900"
+                  >
+                    <div className="text-xl font-black">{savedTrip.destination}</div>
+                    <div className="mt-2 text-sm text-slate-500">{savedTrip.duration_days} days | {savedTrip.travelers} travelers</div>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              <p className="text-sm text-slate-600 dark:text-slate-300">Your Wish List has no saved trips yet.</p>
+              <Link to="/planner" className="premium-button">Plan a trip</Link>
+            </div>
+          )}
+          {guideError ? <p className="mt-4 text-sm text-red-600">{guideError}</p> : null}
+        </section>
       </div>
     )
   }
@@ -116,17 +202,91 @@ export default function TripResults() {
   // Get destination info
   const destinationRegion = trip.planner_meta?.destination?.region ?? trip.planner_meta?.destination?.name ?? ''
   const destinationCountry = trip.planner_meta?.destination?.country ?? 'India'
-  const startDateLabel = formatTripDate(trip.planner_meta?.startDate)
-  const endDateLabel = formatTripDate(trip.planner_meta?.endDate)
-  const selectedDateDays = getInclusiveDayCount(trip.planner_meta?.startDate, trip.planner_meta?.endDate)
-  const itineraryDays = trip.itinerary.length || trip.duration_days
-  const datesMatchItinerary = selectedDateDays === itineraryDays
-  const tripDays = datesMatchItinerary ? selectedDateDays : itineraryDays
-  const tripNights = Math.max(0, tripDays - 1)
 
   return (
     <div className="min-h-screen premium-bg text-slate-900 dark:text-white pb-20">
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+        <section className="glass-card p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-[#9a7650]">AI Travel Guide</p>
+              <h1 className="mt-2 text-3xl font-black">Choose a trip from your Wish List</h1>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                Select a saved MongoDB trip, then Ask AI. No trip details need to be entered again.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={askAi}
+              disabled={!selectedSavedTrip || generating}
+              className="premium-button disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {generating ? 'Building personalized guide...' : 'Ask AI'}
+            </button>
+          </div>
+
+          {guideError ? (
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+              {guideError}
+            </p>
+          ) : null}
+
+          {loadingTrips ? (
+            <p className="mt-6 text-sm font-bold text-slate-500">Loading Wish List trips...</p>
+          ) : savedTrips.length ? (
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {savedTrips.map((savedTrip) => {
+                const key = tripKey(savedTrip)
+                const selected = key === selectedTripId
+                return (
+                  <button
+                    type="button"
+                    key={key}
+                    onClick={() => {
+                      setSelectedTripId(key)
+                      setRemoteTrip(null)
+                      setGuideError('')
+                    }}
+                    className={`rounded-2xl border p-5 text-left transition ${
+                      selected
+                        ? 'border-[#c7a575] bg-[#fbf6ee] ring-2 ring-[#c7a575]/20 dark:bg-slate-800'
+                        : 'border-slate-200 bg-white hover:border-[#c7a575] dark:border-slate-700 dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-xl font-black">{savedTrip.destination}</div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          {savedTrip.duration_days} days | {savedTrip.travelers} travelers
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-[#f5eee4] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[#9a7650] dark:bg-slate-950">
+                        {selected ? 'Selected' : savedTrip.planner_meta?.budget ?? 'Saved'}
+                      </span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
+                      <span>Hotel: {savedTrip.planner_meta?.hotelPref ?? 'Flexible'}</span>
+                      <span>Transport: {savedTrip.planner_meta?.transportPref ?? 'Flexible'}</span>
+                      <span>{savedTrip.itinerary?.length ?? 0} itinerary days stored</span>
+                      <span>{savedTrip.hotels?.length ?? 0} hotels stored</span>
+                    </div>
+                    {savedTrip.planner_meta?.interests?.length ? (
+                      <p className="mt-3 text-xs text-slate-500">
+                        Interests: {savedTrip.planner_meta.interests.join(', ')}
+                      </p>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="mt-6">
+              <p className="text-sm text-slate-600 dark:text-slate-300">Your Wish List has no saved trips yet.</p>
+              <Link to="/planner" className="premium-button mt-4">Plan a trip</Link>
+            </div>
+          )}
+        </section>
+
         {/* Destination Header */}
         <section className="glass-card p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -146,32 +306,6 @@ export default function TripResults() {
               <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 {budgetInfo.comfort}
               </span>
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-[28px] border border-[#dfceb7] bg-gradient-to-br from-[#fffaf3] via-white to-[#f5e8d7] p-5 shadow-xl shadow-slate-900/5 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 sm:p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#c7a575] text-white shadow-lg shadow-[#c7a575]/25">
-              <CalendarDays className="h-7 w-7" aria-hidden="true" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#9a7650] dark:text-[#d5b487]">Trip Duration</p>
-              <h2 className="mt-1 text-xl font-black leading-snug sm:text-2xl">
-                {startDateLabel && endDateLabel && datesMatchItinerary
-                  ? `Trip Duration: ${startDateLabel} - ${endDateLabel}`
-                  : 'Travel dates not selected'}
-              </h2>
-              <div className="mt-3 flex flex-col gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 sm:flex-row sm:flex-wrap sm:gap-5">
-                <span className="flex items-center gap-2">
-                  <Moon className="h-4 w-4 text-[#9a7650] dark:text-[#d5b487]" aria-hidden="true" />
-                  {tripNights} {tripNights === 1 ? 'Night' : 'Nights'} / {tripDays} {tripDays === 1 ? 'Day' : 'Days'}
-                </span>
-                <span className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-[#9a7650] dark:text-[#d5b487]" aria-hidden="true" />
-                  Destination: {trip.destination}
-                </span>
-              </div>
             </div>
           </div>
         </section>
@@ -200,27 +334,15 @@ export default function TripResults() {
 
         <section className="space-y-3">
           <h2 className="text-2xl font-black">Day-wise itinerary with timings</h2>
-          {trip.itinerary.map((d) => {
-            const dayDate = datesMatchItinerary && trip.planner_meta?.startDate
-              ? formatTripDate(addDaysToDateInput(trip.planner_meta.startDate, d.day - 1))
-              : null
-
-            return (
+          {trip.itinerary.map((d) => (
             <article key={d.day} className="glass-card p-4">
-              <button className="w-full text-left flex items-center justify-between gap-4" onClick={() => setOpenDays((p) => ({ ...p, [d.day]: !p[d.day] }))}>
-                <div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <div className="font-black">Day {d.day}</div>
-                    {dayDate && <div className="text-xs font-bold text-[#9a7650] dark:text-[#d5b487]">{dayDate}</div>}
-                  </div>
-                  <div className="text-sm">{d.title}</div>
-                </div>
+              <button className="w-full text-left flex items-center justify-between" onClick={() => setOpenDays((p) => ({ ...p, [d.day]: !p[d.day] }))}>
+                <div><div className="font-black">Day {d.day}</div><div className="text-sm">{d.title}</div></div>
                 <div className="text-xs">{d.estimated_cost}</div>
               </button>
               {openDays[d.day] && <div className="mt-3 space-y-2">{d.items.map((it) => <div key={`${it.time}-${it.title}`} className="glass-panel p-3 text-sm"><b>{it.time}</b> • {it.title}<div className="text-slate-600 dark:text-slate-300">{it.details}</div></div>)}</div>}
             </article>
-            )
-          })}
+          ))}
         </section>
 
         <section className="grid md:grid-cols-2 gap-4">
@@ -272,6 +394,33 @@ export default function TripResults() {
           <div className="glass-card p-4"><div className="font-black mb-2">Weather section</div><div className="text-sm">{trip.weather?.temperature_c ?? 24}°C • {trip.weather?.summary ?? 'Pleasant'}</div></div>
           <div className="glass-card p-4"><div className="font-black mb-2">Preferences</div><div className="text-sm">Transport: {trip.planner_meta?.transportPref ?? 'Auto'}</div><div className="text-sm">Hotel: {trip.planner_meta?.hotelPref ?? 'Auto'}</div></div>
         </section>
+
+        {trip.budget_recommendations || trip.travel_tips?.length ? (
+          <section className="grid gap-4 md:grid-cols-2">
+            {trip.budget_recommendations ? (
+              <div className="glass-card p-4">
+                <div className="font-black mb-3">AI budget recommendations</div>
+                <div className="space-y-2 text-sm">
+                  <p>Style: <b className="capitalize">{trip.budget_recommendations.budget_style}</b></p>
+                  <p>
+                    Trip total: <b>₹{trip.budget_recommendations.trip_total_range?.min.toLocaleString()} - ₹{trip.budget_recommendations.trip_total_range?.max.toLocaleString()}</b>
+                  </p>
+                  {Object.entries(trip.budget_recommendations.allocation ?? {}).map(([category, value]) => (
+                    <p key={category} className="capitalize">{category.replaceAll('_', ' ')}: {value}</p>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {trip.travel_tips?.length ? (
+              <div className="glass-card p-4">
+                <div className="font-black mb-3">Personalized travel tips</div>
+                <ul className="space-y-2 text-sm">
+                  {trip.travel_tips.map((tip) => <li key={tip}>• {tip}</li>)}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         <section>
           <h2 className="text-2xl font-black mb-2">Hotel recommendations</h2>
@@ -327,7 +476,7 @@ export default function TripResults() {
             Edit Itinerary
           </Link>
           <Link to={trip.itinerary_id || trip.id ? `/workspace/itinerary/${trip.itinerary_id ?? trip.id}` : '/trip-results'} className="luxury-chip">View Itinerary</Link>
-          <Link to="/workspace" className="luxury-chip">Open Dashboard</Link>
+          <Link to="/workspace" className="luxury-chip">Open Wish List</Link>
         </section>
       </main>
     </div>

@@ -1,8 +1,10 @@
 from rest_framework import serializers
-from .models import ActivityLog, Booking, Trip, Workspace
+from .models import ActivityLog, Booking, Trip, Workspace, WishListItem
+
 
 
 class TripSerializer(serializers.Serializer):
+
     id = serializers.SerializerMethodField()
     itinerary_id = serializers.CharField(read_only=True)
     owner_id = serializers.CharField(read_only=True, allow_null=True)
@@ -74,7 +76,21 @@ class WorkspaceSerializer(serializers.Serializer):
         return str(obj.id)
 
 
+class WishListItemSerializer(serializers.Serializer):
+    id = serializers.SerializerMethodField()
+    owner_id = serializers.CharField(read_only=True)
+    owner_email = serializers.EmailField(read_only=True, allow_null=True)
+    itinerary_id = serializers.CharField(read_only=True)
+    added_at = serializers.DateTimeField(read_only=True)
+    destination = serializers.CharField(required=False, allow_blank=True)
+    planner_meta = serializers.DictField(required=False)
+
+    def get_id(self, obj):
+        return str(obj.id)
+
+
 class BookingSerializer(serializers.Serializer):
+
     id = serializers.SerializerMethodField()
     booking_id = serializers.CharField(read_only=True)
     owner_id = serializers.CharField(read_only=True)

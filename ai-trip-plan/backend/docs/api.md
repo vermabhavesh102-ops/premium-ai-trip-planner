@@ -6,6 +6,15 @@ Auth:
 - `POST /api/auth/signup` — body: { full_name, email, password } → returns `{ access_token }` and sends verification email.
 - `POST /api/auth/login` — form-encoded `username`(email) and `password` → returns `{ access_token }`.
 - `GET /api/auth/me` — returns current user object (requires Authorization: Bearer <token>)
+- `GET /api/auth/profile` — profile details and saved-trip statistics
+- `PATCH /api/auth/profile` — update full name and username; email is immutable
+- `POST /api/auth/profile/image` — upload authenticated user's profile image
+- `POST /api/auth/profile/password/send-otp` — email a short-lived password-change OTP
+- `POST /api/auth/profile/password/verify-otp` — verify OTP and issue a short-lived change token
+- `POST /api/auth/profile/password/change` — update password using the verified change token
+- `POST /api/auth/forgot-password/send-otp` — generic forgot-password OTP request; does not reveal whether an email exists
+- `POST /api/auth/forgot-password/verify-otp` — verify forgot-password OTP with attempt limits
+- `POST /api/auth/forgot-password/change` — update forgotten password with a verified change token
 - `POST /api/auth/password-reset` — body: { email } → sends password reset email.
 - `POST /api/auth/password-reset/confirm` — body: { uid, token, new_password } → set password.
 - `GET /api/auth/verify-email/<uid>/<token>` — email verification link.

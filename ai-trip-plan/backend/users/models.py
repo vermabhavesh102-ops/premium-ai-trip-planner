@@ -1,6 +1,6 @@
 import datetime
 from django.contrib.auth.hashers import make_password, check_password
-from mongoengine import Document, EmailField, StringField, BooleanField, DateTimeField
+from mongoengine import DictField, Document, EmailField, StringField, BooleanField, DateTimeField, IntField
 
 
 class User(Document):
@@ -8,6 +8,7 @@ class User(Document):
     email = EmailField(required=True, unique=True)
     username = StringField(required=True, unique=True)
     full_name = StringField(default='')
+    profile_image = StringField(default='')
     password = StringField(required=True)
     role = StringField(choices=ROLES, default='user')
     is_email_verified = BooleanField(default=False)
@@ -18,6 +19,12 @@ class User(Document):
     last_login = DateTimeField()
     last_logout = DateTimeField()
     last_active = DateTimeField()
+    password_otp_hash = StringField(default='')
+    password_otp_expires_at = DateTimeField()
+    password_otp_sent_at = DateTimeField()
+    password_otp_attempts = IntField(default=0)
+    password_change_token_hash = StringField(default='')
+    password_change_token_expires_at = DateTimeField()
 
     meta = {
         'collection': 'users',
@@ -59,3 +66,37 @@ class User(Document):
 
     def get_short_name(self):
         return self.username
+
+
+class PasswordOtpLog(Document):
+    PURPOSES = ('forgot_password', 'profile_change')
+    STATUSES = (
+        'requested',
+        'sent',
+        'blocked',
+        'failed_send',
+        'verified',
+        'invalid_otp',
+        'locked',
+        'password_updated',
+    )
+
+    email = EmailField(required=True)
+    user_id = StringField()
+    purpose = StringField(choices=PURPOSES, required=True)
+    status = StringField(choices=STATUSES, required=True)
+    ip_address = StringField()
+    metadata = DictField(default=dict)
+    created_at = DateTimeField(default=datetime.datetime.utcnow)
+
+    meta = {
+        'collection': 'password_otp_logs',
+        'indexes': [
+            'email',
+            'user_id',
+            'purpose',
+            'status',
+            'created_at',
+            {'fields': ['email', 'purpose', '-created_at']},
+        ],
+    }

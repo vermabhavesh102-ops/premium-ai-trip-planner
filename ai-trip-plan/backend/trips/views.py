@@ -7,8 +7,10 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
 from .activity import log_activity
-from .models import ActivityLog, Trip, Workspace, utcnow
-from .serializers import ActivityLogSerializer, TripSerializer, WorkspaceSerializer
+from .models import ActivityLog, Trip, Workspace, WishListItem, utcnow
+from .serializers import ActivityLogSerializer, TripSerializer, WorkspaceSerializer, WishListItemSerializer
+
+
 
 
 def is_admin(user):
@@ -158,7 +160,62 @@ def workspace_detail(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+def wishlist_list(request):
+    # Returns only current user's wishlist items.
+    queryset = WishListItem.objects(owner_id=str(request.user.id)).order_by('-added_at')
+    return Response(WishListItemSerializer(list(queryset), many=True).data)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def wishlist_add(request):
+    itinerary_id = request.data.get('itinerary_id')
+    if not itinerary_id:
+        return Response({'detail': 'itinerary_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Ensure trip exists and is not deleted.
+    trip = Trip.objects(itinerary_id=itinerary_id, is_deleted=False).first()
+    if not trip:
+        return Response({'detail': 'Trip not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only avoid duplicates.
+    item, created = WishListItem.objects.get_or_create(
+        owner_id=str(request.user.id),
+        itinerary_id=itinerary_id,
+        defaults={
+            'owner_email': getattr(request.user, 'email', None),
+            'destination': trip.destination,
+            'planner_meta': trip.planner_meta or {},
+        },
+    )
+
+    # If it already existed, ensure snapshot fields are up to date.
+    item.owner_email = getattr(request.user, 'email', None)
+    item.destination = trip.destination
+    item.planner_meta = trip.planner_meta or {}
+    item.save()
+
+    return Response(WishListItemSerializer(item).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def wishlist_remove(request, wishlist_id=None):
+    if not wishlist_id:
+        return Response({'detail': 'wishlist_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    item = WishListItem.objects(id=wishlist_id, owner_id=str(request.user.id)).first()
+    if not item:
+        return Response({'detail': 'Wish list item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    item.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
 def workspace_itinerary_detail(request, itinerary_id):
+
     trip, error = get_owned_or_permitted_trip(request, itinerary_id)
     if error:
         return error

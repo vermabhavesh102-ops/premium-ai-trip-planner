@@ -75,37 +75,38 @@ export async function apiFetch<T = JsonValue>(path: string, options: RequestInit
     } catch {
       detail = null
     }
-    // Extract meaningful error message from various error formats
-    let message = `Request failed: ${res.status}`
-    if (typeof detail === 'string' && detail) {
-      message = detail
-    } else if (detail?.detail) {
-      // Django/DRF returns errors in 'detail' field
-      if (Array.isArray(detail.detail)) {
-        // Validation errors are an array
-        message = detail.detail.map((d: any) => d.msg || d.message || JSON.stringify(d)).join('; ')
-      } else if (typeof detail.detail === 'string') {
-        message = detail.detail
-      } else if (typeof detail.detail === 'object') {
-        message = JSON.stringify(detail.detail)
-      }
-    } else if (detail?.message) {
-      message = detail.message
-    } else if (detail?.error) {
-      message = typeof detail.error === 'string' ? detail.error : JSON.stringify(detail.error)
+
+    const status = res.status
+    const friendlyByStatus: Record<number, string> = {
+      400: 'Invalid request. Please try again.',
+      401: 'Please log in again.',
+      403: 'Access denied.',
+      404: 'Page not found.',
+      429: 'Too many requests. Please try later.',
+      500: 'Something went wrong. Please try again.',
     }
-    const err = new Error(message) as Error & { status?: number; detail?: any }
-    err.status = res.status
+    const userMessage = friendlyByStatus[status] ?? friendlyByStatus[500]
+
+    // Throw an error object for UI to render; never include technical/raw HTTP codes in user-facing message.
+    const err = new Error(userMessage) as Error & {
+      status: number
+      userMessage: string
+      detail: any
+    }
+    err.status = status
+    err.userMessage = userMessage
     err.detail = detail
+
     // If token is invalid or expired, clear stored token so frontend can recover
-    if (res.status === 401) {
+    if (status === 401) {
       try {
-        // best-effort clear
         localStorage.removeItem('access_token')
       } catch {}
     }
+
     throw err
   }
+
 
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
