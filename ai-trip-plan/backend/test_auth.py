@@ -26,7 +26,6 @@ assert r.status_code == 200
 user = {
     "email": "test@example.com",
     "password": "StrongPass!123",
-    "full_name": "Test User",
 }
 
 # 2) Signup happy path

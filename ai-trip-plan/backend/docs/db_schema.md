@@ -4,9 +4,7 @@ Collections and main fields used by the backend to satisfy the frontend:
 
 - users
   - _id (ObjectId)
-  - username (string)
   - email (string, unique)
-  - full_name (string)
   - role (string: 'user'|'admin')
   - is_email_verified (bool)
   - email_verified_at (datetime)

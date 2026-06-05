@@ -20,7 +20,6 @@ class AuthService:
             return await user_repo.create_user(
                 email=payload.email,
                 password=payload.password,
-                full_name=payload.full_name,
             )
         except ValueError as e:
             if str(e) == "email_exists":
@@ -70,7 +69,6 @@ class AuthService:
         return UserInDB(
             id=user.id,
             email=user.email,
-            full_name=user.full_name,
             password_hash=user.password_hash,
             created_at=user.created_at,
         )

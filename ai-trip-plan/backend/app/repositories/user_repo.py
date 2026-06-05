@@ -11,7 +11,6 @@ from app.core.security import hash_password, verify_password
 class UserRecord:
     id: str
     email: str
-    full_name: str
     password_hash: str
     created_at: str
 
@@ -25,7 +24,7 @@ class InMemoryUserRepository:
     def __init__(self):
         self._users_by_email: Dict[str, UserRecord] = {}
 
-    async def create_user(self, *, email: str, password: str, full_name: str) -> UserRecord:
+    async def create_user(self, *, email: str, password: str) -> UserRecord:
         # Normalize email to lower-case to prevent duplicates by case
         norm_email = email.strip().lower()
         if norm_email in self._users_by_email:
@@ -34,7 +33,6 @@ class InMemoryUserRepository:
         rec = UserRecord(
             id=str(uuid.uuid4()),
             email=norm_email,
-            full_name=full_name.strip(),
             password_hash=hash_password(password),
             created_at="1970-01-01T00:00:00Z",
         )
