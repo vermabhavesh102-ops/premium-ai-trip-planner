@@ -5,7 +5,7 @@ from typing import Any, Optional
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from rest_framework.response import Response
-from rest_framework.views import exception_handler as drf_exception_handler
+from rest_framework.views import exception_handler as drf_default_exception_handler
 from rest_framework import status
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ def drf_exception_handler(exc: Exception, context: Optional[dict[str, Any]] = No
     - Returns only friendly messages in `detail`.
     """
 
-    response = drf_exception_handler(exc, context)
+    response = drf_default_exception_handler(exc, context)
     status_code = getattr(response, "status_code", None) if response is not None else None
 
     # Determine status code best-effort
