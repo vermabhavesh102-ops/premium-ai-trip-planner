@@ -159,7 +159,7 @@ export default function Home() {
                   to="/planner"
                   className="inline-flex min-h-12 items-center justify-center rounded-full bg-slate-950 px-7 text-sm font-bold text-white shadow-xl shadow-slate-950/15 transition hover:bg-slate-800 dark:bg-[#d5b487] dark:text-slate-950 dark:hover:bg-[#c7a575]"
                 >
-                  Generate itinerary
+                   Plan my trip                 
                 </Link>
               </div>
 
