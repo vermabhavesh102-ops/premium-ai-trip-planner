@@ -187,8 +187,8 @@ export default function Profile() {
 
   const signOut = () => {
     apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+    navigate('/login?success=logout', { replace: true, state: { showLogoutSuccess: true } })
     logout()
-    navigate('/')
   }
 
   if (loading && !profile) {

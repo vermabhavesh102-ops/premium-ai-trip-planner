@@ -50,9 +50,9 @@ export default function Header() {
 
   const signOut = () => {
     apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+    navigate('/login?success=logout', { replace: true, state: { showLogoutSuccess: true } })
     logout()
     setProfileOpen(false)
-    navigate('/')
   }
 
   return (

@@ -12,6 +12,7 @@ import { useAuth } from './context/AuthContext'
 import Header from './components/Header'
 import CustomCursor from './components/CustomCursor'
 import Footer from './components/Footer'
+import LoginSuccessPopup from './components/LoginSuccessPopup'
 import AppErrorBoundary from './components/AppErrorBoundary'
 import ErrorPage from './pages/ErrorPage'
 
@@ -37,6 +38,7 @@ function App() {
       <AuthProvider>
         <CustomCursor />
         <Header />
+        <LoginSuccessPopup />
         <Routes>
 
         <Route path="/" element={<Home />} />

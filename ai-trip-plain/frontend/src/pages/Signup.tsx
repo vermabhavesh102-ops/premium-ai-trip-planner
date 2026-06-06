@@ -45,7 +45,7 @@ export default function Signup() {
 
       storeToken(token.access_token)
       login(token.access_token)
-      navigate('/planner')
+      navigate('/planner', { state: { showLoginSuccess: true } })
     } catch (e: any) {
       const errorMessage = typeof e === 'string'
         ? e

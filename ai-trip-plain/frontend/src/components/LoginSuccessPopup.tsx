@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 type LoginNavigationState = {
   showLoginSuccess?: boolean
+  showLogoutSuccess?: boolean
 }
 
 export default function LoginSuccessPopup() {
@@ -12,9 +13,25 @@ export default function LoginSuccessPopup() {
   const navigate = useNavigate()
   const [isVisible, setIsVisible] = useState(false)
   const state = location.state as LoginNavigationState | null
+  const searchParams = new URLSearchParams(location.search)
+  const searchStatus = searchParams.get('success') as 'login' | 'logout' | null
+  const status = searchStatus === 'logout'
+    ? 'logout'
+    : searchStatus === 'login'
+    ? 'login'
+    : state?.showLogoutSuccess
+    ? 'logout'
+    : state?.showLoginSuccess
+    ? 'login'
+    : undefined
+
+  const message = status === 'logout'
+    ? 'You have been logged out successfully.'
+    : 'Welcome back to TripZenAI!'
+  const title = status === 'logout' ? 'Logout Successful' : 'Login Successful'
 
   useEffect(() => {
-    if (!state?.showLoginSuccess) return
+    if (!status) return
 
     setIsVisible(true)
     navigate(`${location.pathname}${location.search}${location.hash}`, {
@@ -22,11 +39,11 @@ export default function LoginSuccessPopup() {
       state: null,
     })
   }, [
+    status,
     location.hash,
     location.pathname,
     location.search,
     navigate,
-    state?.showLoginSuccess,
   ])
 
   useEffect(() => {
@@ -74,13 +91,13 @@ export default function LoginSuccessPopup() {
                 id="login-success-title"
                 className="font-black tracking-tight text-slate-900 dark:text-white"
               >
-                Login Successful
+                {title}
               </h2>
               <p
                 id="login-success-message"
                 className="text-sm font-medium text-slate-600 dark:text-slate-300"
               >
-                Welcome back to TripZenAI!
+                {message}
               </p>
             </div>
 
