@@ -1,0 +1,17 @@
+Django>=4.2,<5.0
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic-settings>=2.0
+httpx>=0.27
+pytest>=8.0
+mongoengine>=0.29.3
+djangorestframework>=3.14
+djangorestframework-simplejwt>=5.5
+django-cors-headers>=4.0
+python-dotenv>=1.0
+django-filter>=24.0
+drf-yasg>=1.21
+PyJWT>=2.0
+
+# Optional email packages (for production)
+# django-anymail[mailgun]>=8.4
