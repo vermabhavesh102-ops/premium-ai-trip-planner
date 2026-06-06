@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -34,6 +34,7 @@ export default function LoginSuccessPopup() {
   const navigate = useNavigate()
   const [isVisible, setIsVisible] = useState(false)
   const [toast, setToast] = useState<LoginNavigationState['toast'] | null>(null)
+  const shownRef = useRef(false)
 
   useEffect(() => {
     const state = location.state as LoginNavigationState | null
@@ -43,28 +44,32 @@ export default function LoginSuccessPopup() {
   }, [location.key])
 
   useEffect(() => {
-    if (!toast) return
+    if (!toast || shownRef.current) return
 
+    // show toast once
+    shownRef.current = true
     setIsVisible(true)
     removeStoredToast()
     navigate(`${location.pathname}${location.search}${location.hash}`, {
       replace: true,
       state: null,
     })
-  }, [
-    location.hash,
-    location.pathname,
-    location.search,
-    navigate,
-    toast,
-  ])
+  }, [location.hash, location.pathname, location.search, navigate, toast])
 
   useEffect(() => {
     if (!isVisible) return
-
     const timeoutId = window.setTimeout(() => setIsVisible(false), 3000)
     return () => window.clearTimeout(timeoutId)
   }, [isVisible])
+
+  // clear toast state after popup hides so it doesn't reappear
+  useEffect(() => {
+    if (isVisible) return
+    if (toast) {
+      setToast(null)
+      shownRef.current = false
+    }
+  }, [isVisible, toast])
 
   return (
     <AnimatePresence>
