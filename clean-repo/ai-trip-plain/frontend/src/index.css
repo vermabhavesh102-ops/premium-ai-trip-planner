@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --bg: #f5eee4;
+  --fg: #111827;
+  --panel: #ffffff;
+  --panel-soft: #f8f2e8;
+  --border: #dfd2c2;
+  --muted: #6b7280;
+  --accent: #b98f56;
+  --accent-soft: #f5e7c9;
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #080f18;
+  --fg: #f8fafc;
+  --panel: #0f172a;
+  --panel-soft: #111827;
+  --border: #1f2937;
+  --muted: #94a3b8;
+  --accent: #7c3aed;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+#root {
+  min-height: 100%;
+}
+
+@layer utilities {
+  .card {
+    @apply rounded-2xl bg-white border border-slate-200 shadow-sm;
+  }
+
+  .card-lg {
+    @apply rounded-3xl bg-white border border-slate-200 shadow-md;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-full bg-slate-950 text-white font-semibold hover:bg-slate-900 transition shadow-lg shadow-slate-900/10;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-full border border-slate-300 bg-white text-slate-900 font-semibold hover:bg-slate-50 transition;
+  }
+
+  .input-field {
+    @apply w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-700;
+  }
+
+  .premium-bg {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(900px 600px at 10% 10%, rgba(219, 176, 114, 0.15), transparent 35%),
+      radial-gradient(700px 500px at 90% 0%, rgba(241, 208, 152, 0.18), transparent 35%),
+      linear-gradient(180deg, #f7efe4 0%, #f4e9df 40%, #f2e5d7 100%);
+  }
+
+  .dark .premium-bg {
+    background: radial-gradient(900px 600px at 10% 10%, rgba(56, 189, 248, 0.16), transparent 35%),
+      radial-gradient(700px 500px at 90% 0%, rgba(168, 85, 247, 0.16), transparent 35%),
+      linear-gradient(180deg, #020617 0%, #08131f 40%, #0d1b2c 100%);
+  }
+
+  .glass-card {
+    @apply rounded-[2rem] border border-slate-200 bg-white text-slate-950 shadow-lg shadow-slate-900/5 dark:border-slate-700 dark:bg-slate-950/90 dark:text-slate-50 dark:shadow-black/30;
+  }
+
+  .glass-panel {
+    @apply rounded-3xl border border-slate-200 bg-white px-4 py-3 text-slate-950 shadow-sm placeholder-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50 dark:placeholder-slate-400;
+  }
+
+  .luxury-chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-700 transition hover:bg-slate-100;
+  }
+
+  .premium-button {
+    @apply inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5 dark:bg-slate-50 dark:text-slate-950 dark:shadow-black/30 dark:hover:bg-white;
+  }
+
+  .cinematic-image {
+    @apply h-full w-full object-cover;
+  }
+}
+
+/* Custom scrollbar for dropdown - smooth scrolling on desktop and mobile */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5);
+  border-radius: 20px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.8);
+}
+
+.dark .scrollbar-custom {
+  scrollbar-color: rgba(71, 85, 105, 0.6) transparent;
+}
+
+.dark .scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(71, 85, 105, 0.6);
+}
+
+.dark .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.9);
+}

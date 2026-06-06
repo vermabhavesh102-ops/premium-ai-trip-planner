@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#142018" />
+    <meta name="application-name" content="TripZenAI" />
+    <meta name="apple-mobile-web-app-title" content="TripZenAI" />
+    <meta
+      name="description"
+      content="TripZenAI is an AI-powered travel planning platform for polished itineraries, destinations, and travel guidance."
+    />
+    <meta property="og:title" content="TripZenAI" />
+    <meta
+      property="og:description"
+      content="Plan smarter journeys with TripZenAI, your AI-powered travel guide."
+    />
+    <link rel="icon" type="image/svg+xml" href="/tripzenai-favicon.svg" />
+    <link rel="apple-touch-icon" href="/tripzenai-favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>TripZenAI</title>
+    <script>
+      // Apply theme immediately to prevent flash of unstyled content
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.body.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+
