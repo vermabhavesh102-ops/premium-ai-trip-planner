@@ -47,6 +47,7 @@ export default function Login() {
     return () => window.clearInterval(id)
   }, [cooldown > 0])
 
+
   const startCooldown = () => {
     setCooldown(60)
   }
@@ -63,7 +64,7 @@ export default function Login() {
 
       storeToken(token.access_token)
       login(token.access_token)
-      navigate('/planner')
+      navigate('/planner', { state: { showLoginSuccess: true } })
     } catch (e: any) {
       setError(e?.message || 'Login failed. Please try again.')
     } finally {
