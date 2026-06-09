@@ -1,0 +1,142 @@
+# ------------------------------------------------------------
+# Root .gitignore (covers the backend project)
+# ------------------------------------------------------------
+
+# -----------------------------
+# Secrets / Environment
+# -----------------------------
+# Keep env examples and templates
+!.env.example
+
+# Ignore actual environment files (do not commit secrets)
+.env
+.env.example
+.env.*
+
+# Also ignore other env naming patterns
+*.env
+*.env.*
+
+###############################
+# Node.js dependencies
+###############################
+node_modules/
+
+# npm/yarn logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# -----------------------------
+# Python dependencies & caches
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+venv/
+.venv/
+ENV/
+env/
+
+###############################
+# Build / output
+###############################
+# Generic build outputs
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+
+# Django/DRF static collection
+staticfiles/
+
+# Compiled gettext
+*.mo
+*.pot
+
+###############################
+# Logs
+###############################
+logs/
+*.log
+*.log.*
+
+# pip logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+###############################
+# Framework caches / temp
+###############################
+.cache/
+.next/
+.nuxt/
+.nuxt-build/
+.svelte-kit/
+.vite/
+
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+Icon?
+
+###############################
+# Local databases (do not commit runtime DB)
+###############################
+*.sqlite3
+*.db
+*.sqlite
+
+###############################
+# Uploads / user-generated content
+###############################
+# Keep source templates/static, ignore generated media/uploads
+media/
+media/**
+uploads/
+uploads/**
+
+###############################
+# IDE/editor configuration
+###############################
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+.idea/
+*.iml
+
+###############################
+# OS-specific
+###############################
+.DS_Store
+Thumbs.db
+
+###############################
+# Docker (local overrides)
+###############################
+docker-compose.override.yml
+
+###############################
+# Security belt-and-suspenders: secret-like filenames
+###############################
+*secret*
+*credentials*
+*credential*
+*keys*
+*private_key*
+*public_key*
+
