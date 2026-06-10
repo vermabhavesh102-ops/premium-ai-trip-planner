@@ -86,7 +86,7 @@ export default function TripResults() {
   useEffect(() => {
     let cancelled = false
 
-    apiFetch<TripResponse[]>('/trips/')
+apiFetch<TripResponse[]>('/api/trips/')
       .then((trips) => {
         if (cancelled) return
         const normalized = trips.map((savedTrip) => ({
@@ -97,8 +97,11 @@ export default function TripResults() {
         setSavedTrips(normalized)
         if (!selectedTripId && normalized[0]) setSelectedTripId(tripKey(normalized[0]))
       })
-      .catch((error: Error) => {
-        if (!cancelled) setGuideError(`MongoDB Wish List could not be refreshed: ${error.message}`)
+ .catch((error: Error) => {
+        if (!cancelled) {
+          // Friendly error; do not leak raw backend details / 404 messages.
+          setGuideError('Could not refresh Wish List from server. Showing locally cached trips.')
+        }
       })
       .finally(() => {
         if (!cancelled) setLoadingTrips(false)
@@ -113,7 +116,7 @@ export default function TripResults() {
     if (!tripId) return
 
     let cancelled = false
-    apiFetch<TripResponse>(`/trips/workspace/itinerary/${tripId}`)
+apiFetch<TripResponse>(`/api/trips/workspace/itinerary/${tripId}`)
       .then((data) => {
         if (cancelled) return
         const normalized = { ...data, id: data.itinerary_id ?? data.id }

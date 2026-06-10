@@ -250,7 +250,7 @@ export default function Planner() {
       const itineraryDuration = selectedTravelDays ?? duration
       let res: TripResponse
       try {
-        res = await apiFetch<TripResponse>('/trips/generate', {
+res = await apiFetch<TripResponse>('/api/trips/generate', {
           method: 'POST',
           body: JSON.stringify({
             destination: destinationName,
@@ -286,7 +286,7 @@ export default function Planner() {
       }
       let tripToStore: TripResponse & { id: string; savedAt: string } = generatedTrip
       try {
-        const persistedTrip = await apiFetch<TripResponse>(editingTripId ? `/trips/${editingTripId}/` : '/trips/', {
+const persistedTrip = await apiFetch<TripResponse>(editingTripId ? `/api/trips/${editingTripId}/` : '/api/trips/', {
           method: editingTripId ? 'PUT' : 'POST',
           body: JSON.stringify(generatedTrip),
         })
