@@ -61,7 +61,7 @@ export default function Workspace() {
   useEffect(() => {
     let cancelled = false
 
-    apiFetch<SavedTrip[]>('/trips/')
+apiFetch<SavedTrip[]>('/api/trips/')
       .then((trips) => {
         if (cancelled) return
         const normalized = trips.map((trip) => ({
@@ -74,7 +74,7 @@ export default function Workspace() {
         setLoadError('')
       })
       .catch((error: Error) => {
-        if (!cancelled) setLoadError(error.message)
+setLoadError('Could not refresh Wish List from server. Showing locally cached trips.')
       })
 
     return () => {
@@ -86,7 +86,7 @@ export default function Workspace() {
     const itineraryId = tripToDelete.itinerary_id ?? tripToDelete.id
     if (itineraryId) {
       try {
-        await apiFetch(`/trips/${itineraryId}/`, { method: 'DELETE' })
+await apiFetch(`/api/trips/${itineraryId}/`, { method: 'DELETE' })
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : 'Could not delete this trip.')
         return
@@ -179,7 +179,7 @@ export default function Workspace() {
 
       {loadError ? (
         <p className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-          MongoDB trips could not be refreshed: {loadError}. Showing locally cached trips.
+Could not refresh trips from server. Showing locally cached trips.
         </p>
       ) : null}
 
